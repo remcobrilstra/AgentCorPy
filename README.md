@@ -1,25 +1,50 @@
-# AgentCorp - Simple Agent Fra# Register tools in global registry
-from agentcorp import global_tool_registry
+# AgentCorp - Simple Agent Framework
 
-tool = Tool(name="my_tool", description="...", function=my_func, parameters={...})
-global_tool_registry.register_tool(tool)
+A simple Python framework for building AI agents that abstracts away different LLM provider SDKs.
 
-# Create agent with specific tools and context
-agent = Agent(
-    provider=provider,
-    system_prompt="You are a helpful assistant.",
-    tool_names=["my_tool"],  # Specify which tools this agent can use
-    context_settings={
-        "allowed_paths": "/safe/path",
-        "max_operations": "10"
-    }
-)
+## TODO: Additional Tools for Programmer Agent
 
-# Load agent from configuration file
-agent = load_agent_from_file("path/to/agent_config.json")
+To enhance the Programmer Agent's capabilities for comprehensive software development workflows, the following tool categories are planned for future implementation. These tools will follow the existing security patterns using `ToolExecutionContext` and respect settings like `workingdir`.
 
-# Save agent configuration
-save_agent_config(agent, "path/to/agent_config.json")le Python framework for building AI agents that abstracts away different LLM provider SDKs.
+### 1. Version Control Tools (Git Integration)
+- **git_status**: Check repository status, staged/unstaged changes, branch info.
+- **git_diff**: Show differences between commits, working directory, or branches.
+- **git_commit**: Stage and commit changes with messages.
+- **git_push/pull**: Sync with remote repositories.
+- **git_clone**: Clone repositories (with path restrictions).
+- **git_log**: View commit history.
+
+### 2. Terminal/Command Execution Tools
+- **run_command**: Execute shell commands safely within the working directory, with output capture and timeout limits.
+- **run_script**: Execute scripts (Python, shell, etc.) with environment control.
+
+### 3. Code Quality and Analysis Tools
+- **lint_code**: Run linters like pylint, flake8, or eslint on files/directories.
+- **format_code**: Auto-format code using black, prettier, or similar.
+- **analyze_code**: Static analysis for complexity, dependencies, or security issues.
+- **grep_search**: Search for patterns within files (complementing `file_search` for content). ✅ **COMPLETED**
+
+### 4. Testing and Debugging Tools
+- **run_tests**: Execute unit tests (pytest, unittest) and capture results.
+- **debug_code**: Run code with debugging tools or profilers.
+- **coverage_report**: Generate test coverage reports.
+
+### 5. Package and Dependency Management Tools
+- **install_package**: Install Python packages via pip (with virtual environment awareness).
+- **manage_requirements**: Update/create requirements.txt, check for updates/outdated packages.
+- **virtualenv_manage**: Create/activate/manage virtual environments.
+
+### 6. Documentation Tools
+- **generate_docs**: Create documentation from code (e.g., using Sphinx or pdoc).
+- **update_readme**: Auto-update README files based on code changes.
+
+### 7. Build and Deployment Tools
+- **build_project**: Run build commands (e.g., setup.py, Makefile).
+- **deploy_app**: Basic deployment helpers (e.g., to cloud platforms, with security checks).
+
+### 8. Advanced Code Manipulation Tools
+- **refactor_code**: Suggest/apply code refactorings (e.g., rename variables, extract functions).
+- **code_review**: Analyze code for best practices, bugs, or improvements.
 
 ## Features
 
@@ -30,7 +55,7 @@ save_agent_config(agent, "path/to/agent_config.json")le Python framework for bui
 - **Tool Integration**: Support for function calling/tools with compatible providers
 - **Complex Task Handling**: Automatic decomposition of complex tasks into subtasks with sequential execution
 - **Tool Context System**: Context-aware tool execution with security settings and restrictions
-- **Built-in Tools**: Framework includes web scraping tools for content retrieval
+- **Built-in Tools**: Framework includes web scraping and secure filesystem tools for content retrieval and file management
 - **Agent Configuration**: Load and save agent configurations from/to JSON files
 
 ## Installation
@@ -159,3 +184,175 @@ result = global_tool_registry.execute_tool({
     "function": {"name": "web_fetch", "arguments": '{"url": "https://example.com", "render_js": true}'}
 }, context)
 ```
+
+### Filesystem Tools
+
+Secure file operations with working directory restrictions. All filesystem operations are restricted to the `workingdir` setting if specified in the agent's context.
+
+#### read_file
+Read the contents of a file.
+
+```python
+# Using with an agent
+response = agent.chat("Read the file config.json")
+
+# Direct tool execution
+result = read_tool.execute(context, file_path="config.json", encoding="utf-8")
+```
+
+Parameters:
+- `file_path` (string, required): Path to the file to read
+- `encoding` (string, optional): File encoding (default: utf-8)
+
+#### write_file
+Write content to a file. Creates parent directories if needed.
+
+```python
+# Using with an agent
+response = agent.chat("Create a file called 'data.txt' with the content 'Hello World'")
+
+# Direct tool execution
+result = write_tool.execute(context, 
+                          file_path="data.txt", 
+                          content="Hello World",
+                          encoding="utf-8",
+                          create_dirs=True)
+```
+
+Parameters:
+- `file_path` (string, required): Path to the file to write
+- `content` (string, required): Content to write to the file
+- `encoding` (string, optional): File encoding (default: utf-8)
+- `create_dirs` (boolean, optional): Whether to create parent directories if they don't exist (default: true)
+
+#### replace_in_file
+Replace text in a file.
+
+```python
+# Using with an agent
+response = agent.chat("Replace 'old_value' with 'new_value' in config.json")
+
+# Direct tool execution
+result = replace_tool.execute(context,
+                            file_path="config.json",
+                            old_text="old_value",
+                            new_text="new_value",
+                            count=1)  # Replace only first occurrence
+```
+
+Parameters:
+- `file_path` (string, required): Path to the file to modify
+- `old_text` (string, required): Text to search for and replace
+- `new_text` (string, required): Text to replace with
+- `encoding` (string, optional): File encoding (default: utf-8)
+- `count` (integer, optional): Maximum number of replacements (-1 for all occurrences, default: -1)
+
+#### file_search
+Search for files in the workspace by glob pattern. Returns paths of matching files, limited to 20 results.
+
+```python
+# Using with an agent
+response = agent.chat("Find all Python files in the project")
+# or more specific:
+response = agent.chat("Search for files matching '**/*.py' pattern")
+
+# Direct tool execution
+result = search_tool.execute(context, query="**/*.py", max_results=20)
+```
+
+Parameters:
+- `query` (string, required): Search for files with names or paths matching this glob pattern
+- `max_results` (integer, optional): Maximum number of results to return (default: 20)
+
+Glob pattern examples:
+- `**/*.{js,ts}` - Match all JavaScript and TypeScript files
+- `src/**` - Match all files under the src directory
+- `**/test/**/*.py` - Match all Python files in any test directory
+- `*.json` - Match JSON files in the root directory
+
+#### grep_search
+Search for text patterns within files using grep-like functionality. Supports both plain text and regular expressions.
+
+```python
+# Using with an agent
+response = agent.chat("Search for all TODO comments in Python files")
+
+# Direct tool execution
+result = grep_tool.execute(context, 
+                         query="TODO", 
+                         include_pattern="**/*.py",
+                         is_regexp=False,
+                         max_results=20)
+```
+
+Parameters:
+- `query` (string, required): The pattern to search for (plain text or regex)
+- `include_pattern` (string, optional): Glob pattern to limit search to specific files (default: "**/*")
+- `is_regexp` (boolean, optional): Whether the query is a regular expression (default: false)
+- `max_results` (integer, optional): Maximum number of matches to return (default: 20)
+
+#### delete_file
+Delete a file.
+
+```python
+# Using with an agent
+response = agent.chat("Delete the temporary file temp.txt")
+
+# Direct tool execution
+result = delete_tool.execute(context, file_path="temp.txt")
+```
+
+Parameters:
+- `file_path` (string, required): Path to the file to delete
+
+#### Security Features
+All filesystem tools implement security restrictions:
+
+- **Working Directory Restriction**: Operations are limited to the `workingdir` setting in the agent's context
+- **Path Validation**: Uses `Path.resolve()` to prevent directory traversal attacks
+- **Error Handling**: Comprehensive error handling for file permissions, encoding issues, and missing files
+
+Example of creating an agent with filesystem tools and security restrictions:
+
+```python
+from agentcorp import Agent, OpenAIProvider
+
+agent = Agent(
+    provider=OpenAIProvider(api_key="your-key"),
+    system_prompt="You are a file management assistant.",
+    tool_names=["read_file", "write_file", "replace_in_file", "delete_file", "file_search"],
+    context_settings={
+        "workingdir": "/safe/working/directory",  # Restrict file operations to this directory
+        "security_level": "restricted"
+    }
+)
+
+# All file operations will be restricted to /safe/working/directory
+response = agent.chat("Create a configuration file with default settings")
+```
+
+See `examples/filesystem_tools_example.py` for a complete demonstration.
+
+### Programmer Agent Example
+
+A comprehensive example showing a programmer agent that works on complex software development tasks:
+
+```bash
+python examples/programmer_agent_example.py
+```
+
+This example demonstrates:
+- Loading agent configuration from `programmer_agent_config.json`
+- Loading API keys from `.env` file (copy `.env.example` to `.env` and add your keys)
+- Setting up a workspace from a simulated git repository
+- Task decomposition and iterative execution
+- Code analysis and modification using filesystem tools
+- Automated testing and documentation updates
+- Progress tracking and result verification
+
+The agent improves a calculator application by fixing bugs, adding features, updating tests, and maintaining documentation.
+
+**Setup:**
+1. Copy `.env.example` to `.env`
+2. Add your OpenAI API key to the `.env` file: `OPENAI_API_KEY=your_key_here`
+3. Run the example
