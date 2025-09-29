@@ -57,6 +57,54 @@ To enhance the Programmer Agent's capabilities for comprehensive software develo
 - **Tool Context System**: Context-aware tool execution with security settings and restrictions
 - **Built-in Tools**: Framework includes web scraping and secure filesystem tools for content retrieval and file management
 - **Agent Configuration**: Load and save agent configurations from/to JSON files
+- **Logging Framework**: Configurable logging with verbose mode for debugging tool calls and task actions
+
+## Logging
+
+AgentCorp includes a simple logging framework for debugging and monitoring agent activities. The logging system provides detailed information about tool calls, task execution, and agent actions.
+
+### Verbose Logging
+
+Enable verbose logging by setting the `AGENTCORP_VERBOSE` environment variable:
+
+```bash
+export AGENTCORP_VERBOSE=true
+python your_script.py
+```
+
+Or programmatically:
+
+```python
+from agentcorp import set_verbose_logging
+
+# Enable verbose logging
+set_verbose_logging(True)
+
+# Your agent code here...
+```
+
+### Log Output
+
+When verbose logging is enabled, you'll see detailed logs including:
+
+- **Tool Calls**: When tools are invoked with their arguments and results
+- **Task Actions**: Task creation, status changes, and execution progress
+- **Agent Activities**: Task decomposition, sequential execution, and complex query handling
+
+Example log output:
+```
+2024-01-15 10:30:15,123 - AgentCorp - DEBUG - Tool call: web_fetch({'url': 'https://example.com'})
+2024-01-15 10:30:16,456 - AgentCorp - DEBUG - Tool call: web_fetch({'url': 'https://example.com'}) -> Content fetched successfully
+2024-01-15 10:30:16,789 - AgentCorp - DEBUG - Task created: [abc123] Analyze data
+2024-01-15 10:30:17,012 - AgentCorp - DEBUG - Task execution_started: [abc123] Analyze data
+```
+
+### Log Levels
+
+- **INFO**: General information about agent operations
+- **DEBUG**: Detailed debugging information including tool calls and task actions (enabled with verbose mode)
+- **WARNING**: Warning messages for potential issues
+- **ERROR**: Error messages for failures
 
 ## Installation
 
@@ -141,7 +189,7 @@ See `agent_configs/` directory for example configurations and `examples/agent_co
 
 - **OpenAI**: GPT models with tool calling
 - **Anthropic**: Claude models with tool calling
-- **xAI**: Grok models (tool calling not yet supported)
+- **xAI**: Grok models including grok-4-fast (tool calling not yet supported)
 
 ## Running the Example
 
@@ -159,6 +207,31 @@ export ANTHROPIC_API_KEY="your-key-here"
 export PROVIDER=anthropic
 python example.py
 ```
+
+Or for xAI:
+
+```bash
+export XAI_API_KEY="your-key-here"
+export PROVIDER=xai
+python example.py
+```
+
+## XAI Agent Example
+
+A simple example demonstrating an agent using xAI's grok-4-fast model:
+
+```bash
+python examples/xai_agent_example.py
+```
+
+This example shows:
+- Creating an agent with the XAI provider
+- Using the grok-4-fast model
+- Simple conversation without tools
+
+**Setup:**
+1. Add your xAI API key to the `.env` file: `XAI_API_KEY=your_key_here`
+2. Run the example
 
 ## Built-in Tools
 

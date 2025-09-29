@@ -1,4 +1,5 @@
 from typing import List, Dict, Any, Callable, Optional
+from .logging import logger
 
 
 class ToolExecutionContext:
@@ -46,7 +47,14 @@ class Tool:
 
     def execute(self, context: ToolExecutionContext, **kwargs) -> Any:
         """Execute the tool with context"""
-        return self.function(context, **kwargs)
+        logger.debug(f"Executing tool: {self.name} with args: {kwargs}")
+        try:
+            result = self.function(context, **kwargs)
+            logger.debug(f"Tool {self.name} completed successfully")
+            return result
+        except Exception as e:
+            logger.error(f"Tool {self.name} failed with error: {e}")
+            raise
 
 
 class ToolRegistry:
@@ -96,7 +104,11 @@ class ToolRegistry:
         if tool:
             import json
             args = json.loads(tool_call["function"]["arguments"])
-            return tool.execute(context, **args)
+            logger.log_tool_call(tool_name, args)
+            result = tool.execute(context, **args)
+            logger.log_tool_call(tool_name, args, str(result)[:100] + "..." if len(str(result)) > 100 else str(result))
+            return result
+        logger.warning(f"Tool '{tool_name}' not found in registry")
         return None
 
 

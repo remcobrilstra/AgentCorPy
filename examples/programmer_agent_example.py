@@ -11,6 +11,10 @@ This example demonstrates a programmer agent that:
 
 The agent configuration is stored in programmer_agent_config.json alongside this file.
 
+Supported providers: OpenAI, Anthropic, xAI (set PROVIDER environment variable)
+
+To see detailed logging of tool calls and task actions, set AGENTCORP_VERBOSE=true
+
 This showcases the AgentCorp framework's capabilities for complex,
 multi-step software development tasks.
 """
@@ -28,7 +32,7 @@ load_dotenv()
 # Add the parent directory to the path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from agentcorp import Agent, OpenAIProvider, AnthropicProvider, ToolExecutionContext, global_tool_registry, AgentConfig
+from agentcorp import Agent, OpenAIProvider, AnthropicProvider, XAIProvider, ToolExecutionContext, global_tool_registry, AgentConfig
 
 
 def create_simulated_git_repo(work_dir: Path) -> None:
@@ -176,13 +180,13 @@ python -m pytest tests/
 def create_programmer_agent(work_dir: Path):
     """Create a programmer agent by loading configuration from file."""
 
-    # Determine provider
-    provider_name = os.getenv("PROVIDER", "openai")
-
     try:
         # Load agent configuration from file
         config_path = Path(__file__).parent / "programmer_agent_config.json"
         config = AgentConfig.from_json_file(str(config_path))
+
+        # Determine provider - use config provider or environment override
+        provider_name = config.provider.lower()
 
         # Override provider based on environment
         if provider_name == "openai":
@@ -197,6 +201,12 @@ def create_programmer_agent(work_dir: Path):
                 print("⚠️  ANTHROPIC_API_KEY not set - using mock responses")
                 return create_mock_programmer_agent(work_dir)
             provider = AnthropicProvider(api_key)
+        elif provider_name == "xai":
+            api_key = os.getenv("XAI_API_KEY")
+            if not api_key:
+                print("⚠️  XAI_API_KEY not set - using mock responses")
+                return create_mock_programmer_agent(work_dir)
+            provider = XAIProvider(api_key, model=config.model)
         else:
             print("⚠️  No valid provider - using mock responses")
             return create_mock_programmer_agent(work_dir)
@@ -320,22 +330,7 @@ def demonstrate_programmer_agent_workflow():
 
         # For real agent, use task decomposition and set execution functions
         if hasattr(agent, 'decompose_task'):
-            task_id = agent.decompose_task(task)
-            
-            # Get the task and set execution functions for subtasks
-            task_obj = agent.task_manager.get_task(task_id)
-            if task_obj and task_obj.is_complex():
-                for i, subtask in enumerate(task_obj.subtasks):
-                    if i == 0:  # Fix multiply method
-                        subtask.set_execution_function(lambda agent, task: simulate_agent_changes(work_dir, "Fix the bug in multiply method"))
-                    elif i == 1:  # Add power function
-                        subtask.set_execution_function(lambda agent, task: simulate_agent_changes(work_dir, "Add power function to Calculator class"))
-                    elif i == 2:  # Update tests
-                        subtask.set_execution_function(lambda agent, task: simulate_agent_changes(work_dir, "Update tests for power function"))
-                    elif i == 3:  # Update README
-                        subtask.set_execution_function(lambda agent, task: simulate_agent_changes(work_dir, "Update README documentation"))
-            
-            result = agent.execute_task_sequentially(task_id)
+            result = agent.handle_complex_query(task)
             print(f"Result: {result}")
         else:
             # For mock agent, simulate step-by-step execution

@@ -42,22 +42,18 @@ def test_task_execution():
 
     task_manager = TaskManager()
 
-    # Create a simple task with execution function
+    # Create a simple task
     task_id = task_manager.add_task("Simple task")
     task = task_manager.get_task(task_id)
 
-    def mock_execute(agent, task):
-        return f"Executed: {task.description}"
-
-    task.set_execution_function(mock_execute)
-
-    # Mock agent (we don't need a real one for this test)
+    # Mock agent with chat method
     class MockAgent:
-        pass
+        def chat(self, prompt, add_to_memory=True):
+            return f"Executed via LLM: {prompt.split('Current task to complete:')[-1].strip()}"
 
     agent = MockAgent()
     result = task.execute(agent)
-    assert result == "Executed: Simple task"
+    assert "Executed via LLM: Simple task" in result
 
     print("✓ Task execution test passed")
 
@@ -76,27 +72,20 @@ def test_sequential_execution():
 
     task = task_manager.get_task(task_id)
 
-    # Set execution functions
+    # Mock agent with chat method
     execution_count = 0
-    def mock_execute(agent, task):
-        nonlocal execution_count
-        execution_count += 1
-        return f"Step {execution_count}: {task.description}"
-
-    for subtask in task.subtasks:
-        subtask.set_execution_function(mock_execute)
-
-    task.set_execution_function(lambda a, t: "Main task completed")
-
-    # Mock agent
     class MockAgent:
-        pass
+        def chat(self, prompt, add_to_memory=True):
+            nonlocal execution_count
+            execution_count += 1
+            task_desc = prompt.split('Current task to complete:')[-1].strip()
+            return f"Step {execution_count}: {task_desc}"
 
     agent = MockAgent()
     result = task_manager.execute_task_sequentially(agent, task_id)
 
     # Check that all subtasks were executed
-    assert execution_count == 3
+    assert execution_count == 4  # 3 subtasks + 1 main task
     assert task.status == TaskStatus.COMPLETED
 
     print("✓ Sequential execution test passed")

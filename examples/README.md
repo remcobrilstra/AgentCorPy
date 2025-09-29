@@ -4,6 +4,36 @@ This directory contains example scripts demonstrating various capabilities of th
 
 ## Examples
 
+### `logging_example.py`
+
+Demonstrates the AgentCorp logging framework for debugging and monitoring:
+
+- **Verbose Logging**: Enable detailed debug logs for tool calls and task actions
+- **Environment Variable Control**: Set `AGENTCORP_VERBOSE=true` for debug output
+- **Programmatic Control**: Enable/disable verbose logging in code
+- **Structured Logging**: Consistent log format with timestamps and log levels
+
+**Key Features Demonstrated:**
+- Task creation and status change logging
+- Tool call logging with arguments and results
+- Environment variable configuration
+- Programmatic logging control
+
+**Usage:**
+```bash
+# Enable verbose logging
+export AGENTCORP_VERBOSE=true
+
+# Run the example
+python examples/logging_example.py
+```
+
+**What it does:**
+1. Enables verbose logging
+2. Creates a task and logs the action
+3. Updates task status and logs the change
+4. Shows debug output for all operations
+
 ### `complex_task_agent.py`
 
 Demonstrates advanced task management capabilities including:

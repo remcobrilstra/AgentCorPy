@@ -72,14 +72,13 @@ class ToolRegistry:
     def get_tool(self, name: str) -> Tool:
         return self.tools.get(name)
 
-    def get_tools_by_names(self, tool_names: List[str]) -> 'ToolRegistry':
-        """Create a subset registry with only the specified tools"""
-        subset_registry = ToolRegistry()
-        subset_registry.tools = {}  # Don't use the global instance's tools
+    def get_tools_by_names(self, tool_names: List[str]) -> Dict[str, Tool]:
+        """Return a dictionary of tools with the specified names"""
+        tools_dict = {}
         for name in tool_names:
             if name in self.tools:
-                subset_registry.tools[name] = self.tools[name]
-        return subset_registry
+                tools_dict[name] = self.tools[name]
+        return tools_dict
 
     def get_tools_for_provider(self, provider_name: str) -> List[Dict[str, Any]]:
         if provider_name.lower() == "openai":

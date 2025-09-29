@@ -1,9 +1,11 @@
 from typing import List, Dict, Any, Optional
+import json
 from .providers import Provider, Message
 from .memory import Memory
 from .tasks import TaskManager
 from . import tools as tools_module
-from .tool_registry import ToolRegistry, ToolExecutionContext, global_tool_registry
+from .tool_registry import ToolRegistry, ToolExecutionContext, global_tool_registry, Tool
+from .logging import logger
 
 
 class Agent:
@@ -20,7 +22,7 @@ class Agent:
         if tool_names:
             self.tools = global_tool_registry.get_tools_by_names(tool_names)
         else:
-            self.tools = ToolRegistry()  # Empty registry
+            self.tools = {}  # Empty dict
 
         # Create execution context
         self.execution_context = ToolExecutionContext(
@@ -32,36 +34,48 @@ class Agent:
         if system_prompt:
             self.memory.set_system_prompt(system_prompt)
 
-    def chat(self, user_message: str, **kwargs) -> str:
-        self.memory.add_message("user", user_message)
+    def chat(self, user_message: str, add_to_memory: bool = True, **kwargs) -> str:
+        if add_to_memory:
+            self.memory.add_message("user", user_message)
 
-        if self.tools.tools and self.provider.supports_tools():
-            tools_format = self.tools.get_tools_for_provider(self.provider.__class__.__name__.replace("Provider", "").lower())
-            response = self.provider.chat_with_tools(self.memory.get_messages(), tools_format, **kwargs)
-            content = response.get("content", "")
-            tool_calls = response.get("tool_calls", [])
+        if self.tools and self.provider.supports_tools():
+            while True:
+                tools_format = self.provider.get_tools_format(self.tools)
+                response = self.provider.chat_with_tools(self.memory.get_messages(), tools_format, **kwargs)
+                content = response.get("content", "")
+                tool_calls = response.get("tool_calls", [])
 
-            # Execute tool calls
-            for tool_call in tool_calls:
-                result = self.tools.execute_tool(tool_call, self.execution_context)
-                self.memory.add_message("assistant", f"Tool call: {tool_call}")
-                self.memory.add_message("tool", str(result))
+                if add_to_memory:
+                    self.memory.add_message("assistant", content, tool_calls=tool_calls)
 
-            # If there are tool calls, get final response
-            if tool_calls:
-                final_response = self.provider.chat(self.memory.get_messages(), **kwargs)
-                self.memory.add_message("assistant", final_response)
-                return final_response
-            else:
-                self.memory.add_message("assistant", content)
-                return content
+                if not tool_calls:
+                    return content
+
+                # Execute tool calls
+                for tool_call in tool_calls:
+                    tool_name = tool_call["function"]["name"]
+                    tool = self.tools.get(tool_name)
+                    if tool:
+                        args = json.loads(tool_call["function"]["arguments"])
+                        logger.log_tool_call(tool_name, args)
+                        result = tool.execute(self.execution_context, **args)
+                        logger.log_tool_call(tool_name, args, str(result)[:100] + "..." if len(str(result)) > 100 else str(result))
+                    else:
+                        result = None
+                        logger.warning(f"Tool '{tool_name}' not found")
+                    if add_to_memory:
+                        self.memory.add_message("tool", str(result), tool_call_id=tool_call.get("id"))
+
         else:
             response = self.provider.chat(self.memory.get_messages(), **kwargs)
-            self.memory.add_message("assistant", response)
+            if add_to_memory:
+                self.memory.add_message("assistant", response)
             return response
 
     def add_task(self, description: str) -> str:
-        return self.task_manager.add_task(description)
+        task_id = self.task_manager.add_task(description)
+        logger.log_task_action("created", task_id, description)
+        return task_id
 
     def get_tasks(self) -> Dict[str, Any]:
         return {
@@ -74,15 +88,18 @@ class Agent:
         from .tasks import TaskStatus
         status_enum = TaskStatus(status.lower())
         self.task_manager.update_task_status(task_id, status_enum, result, error)
+        logger.log_task_action(f"status_changed_to_{status.lower()}", task_id, f"Status: {status}", result=result, error=error)
 
     def add_complex_task(self, description: str, subtasks: List[str]) -> str:
         """Add a complex task that will be decomposed into subtasks"""
-        return self.task_manager.add_complex_task(description, subtasks)
+        task_id = self.task_manager.add_complex_task(description, subtasks)
+        logger.log_task_action("created_complex", task_id, description, subtasks_count=len(subtasks))
+        return task_id
 
     def decompose_task(self, task_description: str) -> str:
         """Use the LLM to decompose a complex task into subtasks"""
         prompt = f"""
-        Break down the following complex task into smaller, manageable subtasks.
+        Break down the following complex task into smaller, sequential, manageable subtasks.
         Provide the subtasks as a numbered list.
 
         Task: {task_description}
@@ -90,11 +107,12 @@ class Agent:
         Subtasks:
         """
 
-        self.memory.add_message("system", "You are a task decomposition expert. Break down complex tasks into logical, sequential steps.")
-        self.memory.add_message("user", prompt)
+        #self.memory.add_message("system", "You are a task decomposition expert. Break down complex tasks into logical, sequential steps.")
+        msg = self.memory.add_message("user", prompt)
 
         response = self.provider.chat(self.memory.get_messages())
-        self.memory.add_message("assistant", response)
+        #self.memory.add_message("assistant", response)
+        self.memory.remove_message(msg)
 
         # Parse the response to extract subtasks
         lines = response.strip().split('\n')
@@ -111,6 +129,11 @@ class Agent:
                     subtasks.append(line)
 
         if subtasks:
+            logger.info(f"Decomposed task into {len(subtasks)} subtasks")
+            logger.debug("Subtasks:")
+            for i, subtask in enumerate(subtasks, 1):
+                logger.debug(f"  {i}. {subtask}")
+
             return self.add_complex_task(task_description, subtasks)
         else:
             # Fallback: create a single task
@@ -118,7 +141,10 @@ class Agent:
 
     def execute_task_sequentially(self, task_id: str) -> Any:
         """Execute a task and its subtasks sequentially"""
-        return self.task_manager.execute_task_sequentially(self, task_id)
+        logger.log_task_action("execution_started", task_id, "Starting sequential execution")
+        result = self.task_manager.execute_task_sequentially(self, task_id)
+        logger.log_task_action("execution_completed", task_id, "Sequential execution finished", result=str(result)[:100] + "..." if len(str(result)) > 100 else str(result))
+        return result
 
     def handle_complex_query(self, query: str) -> str:
         """Handle a complex query by decomposing it into tasks and executing them"""
@@ -131,9 +157,12 @@ class Agent:
         Is this a complex task that should be broken down? Answer with YES or NO, then briefly explain why.
         """
 
-        self.memory.add_message("user", complexity_prompt)
+        msg1 = self.memory.add_message("user", complexity_prompt)
         complexity_response = self.provider.chat(self.memory.get_messages())
-        self.memory.add_message("assistant", complexity_response)
+        msg2 = self.memory.add_message("assistant", complexity_response)
+
+        self.memory.remove_message(msg1)
+        self.memory.remove_message(msg2)
 
         if "YES" in complexity_response.upper():
             # Decompose and execute

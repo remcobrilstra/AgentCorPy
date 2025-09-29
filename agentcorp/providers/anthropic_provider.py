@@ -1,6 +1,8 @@
 from typing import List, Dict, Any
 from .base import Provider, Message
+from ..tool_registry import Tool
 import anthropic
+import json
 
 
 class AnthropicProvider(Provider):
@@ -15,8 +17,24 @@ class AnthropicProvider(Provider):
         for msg in messages:
             if msg.role == "system":
                 system_message = msg.content
+            elif msg.role == "tool":
+                # For Anthropic, tool results are added as user messages with tool_result
+                anthropic_messages.append({
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "tool_result",
+                            "tool_call_id": msg.tool_call_id,
+                            "content": msg.content
+                        }
+                    ]
+                })
             else:
-                anthropic_messages.append({"role": msg.role, "content": msg.content})
+                content = msg.content
+                if msg.tool_calls:
+                    # Anthropic doesn't use tool_calls in history like this, but for consistency
+                    pass
+                anthropic_messages.append({"role": msg.role, "content": content})
 
         response = self.client.messages.create(
             model=self.model,
@@ -45,8 +63,33 @@ class AnthropicProvider(Provider):
         for msg in messages:
             if msg.role == "system":
                 system_message = msg.content
+            elif msg.role == "tool":
+                # Tool results
+                anthropic_messages.append({
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "tool_result",
+                            "tool_call_id": msg.tool_call_id,
+                            "content": msg.content
+                        }
+                    ]
+                })
             else:
-                anthropic_messages.append({"role": msg.role, "content": msg.content})
+                content = msg.content
+                if msg.tool_calls:
+                    # For assistant messages with tool_calls, Anthropic expects tool_use in content
+                    content_blocks = [{"type": "text", "text": content}]
+                    for tc in msg.tool_calls:
+                        content_blocks.append({
+                            "type": "tool_use",
+                            "id": tc["id"],
+                            "name": tc["function"]["name"],
+                            "input": json.loads(tc["function"]["arguments"])
+                        })
+                    anthropic_messages.append({"role": msg.role, "content": content_blocks})
+                else:
+                    anthropic_messages.append({"role": msg.role, "content": content})
 
         response = self.client.messages.create(
             model=self.model,
@@ -66,7 +109,10 @@ class AnthropicProvider(Provider):
                     "id": content_block.id,
                     "function": {
                         "name": content_block.name,
-                        "arguments": str(content_block.input)
+                        "arguments": json.dumps(content_block.input)
                     }
                 })
         return result
+
+    def get_tools_format(self, tools: Dict[str, Tool]) -> List[Dict[str, Any]]:
+        return [tool.to_anthropic_format() for tool in tools.values()]

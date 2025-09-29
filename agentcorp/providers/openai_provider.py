@@ -1,5 +1,6 @@
 from typing import List, Dict, Any
 from .base import Provider, Message
+from ..tool_registry import Tool
 import openai
 
 
@@ -9,7 +10,22 @@ class OpenAIProvider(Provider):
         self.client = openai.OpenAI(api_key=api_key)
 
     def chat(self, messages: List[Message], **kwargs) -> str:
-        openai_messages = [{"role": msg.role, "content": msg.content} for msg in messages]
+        openai_messages = []
+        for msg in messages:
+            msg_dict = {"role": msg.role, "content": msg.content}
+            if msg.tool_calls:
+                msg_dict["tool_calls"] = [
+                    {
+                        "id": tc["id"],
+                        "function": {
+                            "name": tc["function"]["name"],
+                            "arguments": tc["function"]["arguments"]
+                        }
+                    } for tc in msg.tool_calls
+                ]
+            if msg.tool_call_id:
+                msg_dict["tool_call_id"] = msg.tool_call_id
+            openai_messages.append(msg_dict)
         response = self.client.chat.completions.create(
             model=self.model,
             messages=openai_messages,
@@ -21,7 +37,22 @@ class OpenAIProvider(Provider):
         return True
 
     def chat_with_tools(self, messages: List[Message], tools: List[Dict[str, Any]], **kwargs) -> Dict[str, Any]:
-        openai_messages = [{"role": msg.role, "content": msg.content} for msg in messages]
+        openai_messages = []
+        for msg in messages:
+            msg_dict = {"role": msg.role, "content": msg.content}
+            if msg.tool_calls:
+                msg_dict["tool_calls"] = [
+                    {
+                        "id": tc["id"],
+                        "function": {
+                            "name": tc["function"]["name"],
+                            "arguments": tc["function"]["arguments"]
+                        }
+                    } for tc in msg.tool_calls
+                ]
+            if msg.tool_call_id:
+                msg_dict["tool_call_id"] = msg.tool_call_id
+            openai_messages.append(msg_dict)
         response = self.client.chat.completions.create(
             model=self.model,
             messages=openai_messages,
@@ -43,3 +74,6 @@ class OpenAIProvider(Provider):
                 for tool_call in message.tool_calls
             ]
         return result
+
+    def get_tools_format(self, tools: Dict[str, Tool]) -> List[Dict[str, Any]]:
+        return [tool.to_openai_format() for tool in tools.values()]

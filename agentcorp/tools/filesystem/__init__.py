@@ -35,8 +35,13 @@ def _validate_path(context: ToolExecutionContext, file_path: str) -> tuple[bool,
     
     try:
         # Resolve both paths to prevent directory traversal attacks
-        file_full_path = Path(file_path).resolve()
         working_dir_path = Path(workingdir).resolve()
+        
+        # If file_path is relative, resolve it relative to the working directory
+        if Path(file_path).is_absolute():
+            file_full_path = Path(file_path).resolve()
+        else:
+            file_full_path = (working_dir_path / file_path).resolve()
         
         # Check if the file path is within the working directory
         if not str(file_full_path).startswith(str(working_dir_path)):

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict, Any
 from .providers import Message
 
 
@@ -7,10 +7,16 @@ class Memory:
         self.messages: List[Message] = []
         self.max_messages = max_messages
 
-    def add_message(self, role: str, content: str):
-        self.messages.append(Message(role, content))
+    def add_message(self, role: str, content: str, tool_calls: List[Dict[str, Any]] = None, tool_call_id: str = None) -> Message:
+        msg = Message(role, content, tool_calls, tool_call_id)
+        self.messages.append(msg)
         if len(self.messages) > self.max_messages:
             self.messages.pop(0)  # Remove oldest
+        return msg
+    
+    def remove_message(self, message: Message):
+        if message in self.messages:
+            self.messages.remove(message)
 
     def get_messages(self) -> List[Message]:
         return self.messages.copy()
