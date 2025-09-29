@@ -42,7 +42,7 @@ def write_file(context: ToolExecutionContext, file_path: str, content: str, enco
 
 # Create the write_file tool
 write_file_tool = Tool(
-    name="write_file",
+    name="filesys.write_file",
     description="Write content to a file. Creates parent directories if needed. Operations are restricted to the working directory if set in context.",
     function=write_file,
     parameters={

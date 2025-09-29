@@ -140,7 +140,7 @@ def grep_search(context: ToolExecutionContext, query: str, include_pattern: str 
 
 # Create the grep_search tool
 grep_search_tool = Tool(
-    name="grep_search",
+    name="filesys.grep_search",
     description="Search for text patterns within files using grep-like functionality. Supports both plain text and regular expressions. Results include file paths, line numbers, and matching lines.",
     function=grep_search,
     parameters={

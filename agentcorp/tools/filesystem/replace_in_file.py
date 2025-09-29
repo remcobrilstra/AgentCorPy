@@ -60,7 +60,7 @@ def replace_in_file(context: ToolExecutionContext, file_path: str, old_text: str
 
 # Create the replace_in_file tool
 replace_in_file_tool = Tool(
-    name="replace_in_file",
+    name="filesys.replace_in_file",
     description="Replace text in a file. Operations are restricted to the working directory if set in context.",
     function=replace_in_file,
     parameters={

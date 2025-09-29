@@ -32,8 +32,7 @@ load_dotenv()
 # Add the parent directory to the path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from agentcorp import Agent, OpenAIProvider, AnthropicProvider, XAIProvider, ToolExecutionContext, global_tool_registry, AgentConfig
-
+from agentcorp import Agent, OpenAIProvider, AnthropicProvider, XAIProvider, ToolExecutionContext, global_tool_registry, load_agent_from_file, AgentConfig
 
 def create_simulated_git_repo(work_dir: Path) -> None:
     """Create a simulated git repository with sample code files."""
@@ -176,126 +175,18 @@ python -m pytest tests/
 
     print("✅ Simulated git repository created with sample calculator project")
 
-
 def create_programmer_agent(work_dir: Path):
     """Create a programmer agent by loading configuration from file."""
+    # Load agent configuration from file
+    config_path = Path(__file__).parent / "programmer_agent_config.json"
 
-    try:
-        # Load agent configuration from file
-        config_path = Path(__file__).parent / "programmer_agent_config.json"
-        config = AgentConfig.from_json_file(str(config_path))
+    agent = load_agent_from_file(config_path)
+    
+    # Update context settings with working directory
+    agent.execution_context.settings["workingdir"] = str(work_dir)
 
-        # Determine provider - use config provider or environment override
-        provider_name = config.provider.lower()
-
-        # Override provider based on environment
-        if provider_name == "openai":
-            api_key = os.getenv("OPENAI_API_KEY")
-            if not api_key:
-                print("⚠️  OPENAI_API_KEY not set - using mock responses")
-                return create_mock_programmer_agent(work_dir)
-            provider = OpenAIProvider(api_key, model=config.model)
-        elif provider_name == "anthropic":
-            api_key = os.getenv("ANTHROPIC_API_KEY")
-            if not api_key:
-                print("⚠️  ANTHROPIC_API_KEY not set - using mock responses")
-                return create_mock_programmer_agent(work_dir)
-            provider = AnthropicProvider(api_key)
-        elif provider_name == "xai":
-            api_key = os.getenv("XAI_API_KEY")
-            if not api_key:
-                print("⚠️  XAI_API_KEY not set - using mock responses")
-                return create_mock_programmer_agent(work_dir)
-            provider = XAIProvider(api_key, model=config.model)
-        else:
-            print("⚠️  No valid provider - using mock responses")
-            return create_mock_programmer_agent(work_dir)
-
-        # Create agent with loaded configuration
-        agent = Agent(
-            provider=provider,
-            system_prompt=config.system_prompt,
-            tool_names=config.tools,
-            context_settings=config.context_settings
-        )
-
-        # Set optional attributes
-        if config.name:
-            agent.name = config.name
-        if config.description:
-            agent.description = config.description
-
-        # Update context settings with working directory
-        agent.execution_context.settings["workingdir"] = str(work_dir)
-
-        print(f"✅ Loaded programmer agent from {config_path}")
-        return agent
-
-    except Exception as e:
-        print(f"❌ Failed to load agent configuration: {e}")
-        print("Falling back to mock agent...")
-        return create_mock_programmer_agent(work_dir)
-
-
-def create_mock_programmer_agent(work_dir: Path):
-    """Create a mock programmer agent for demonstration without API keys."""
-    print("🎭 Creating mock programmer agent for demonstration...")
-
-    # Create a simple mock that simulates agent behavior
-    class MockProgrammerAgent:
-        def __init__(self, work_dir):
-            self.work_dir = work_dir
-            self.tasks_completed = []
-
-        def chat(self, message):
-            """Simulate agent responses for demonstration."""
-            if "fix the bug in multiply method" in message.lower():
-                return """I'll fix the bug in the multiply method. Let me first examine the current code.
-
-Looking at the calculator.py file, I can see the multiply method has a bug - it's using addition instead of multiplication.
-
-Let me fix this by replacing the incorrect operation."""
-            elif "add power function" in message.lower():
-                return """I'll add a power function to the Calculator class. Let me examine the current structure and add the method appropriately."""
-            elif "update tests" in message.lower():
-                return """I need to update the tests to include the new power function. Let me check the current test file and add appropriate test cases."""
-            elif "update readme" in message.lower():
-                return """I'll update the README to document the new power function feature."""
-            else:
-                return f"I understand you want me to: {message}. Let me work on this task."
-
-        def add_task(self, description):
-            """Mock task addition."""
-            task_id = len(self.tasks_completed) + 1
-            print(f"📋 Added task {task_id}: {description}")
-            return task_id
-
-        def get_tasks(self):
-            """Mock task retrieval."""
-            return []
-
-        def decompose_task(self, task):
-            """Mock task decomposition - actually perform the changes."""
-            print(f"🔍 Decomposing task: {task}")
-            # Simulate decomposing and executing all steps
-            steps = [
-                "Fix the bug in multiply method",
-                "Add power function to Calculator class",
-                "Update tests for power function", 
-                "Update README documentation"
-            ]
-            for step in steps:
-                print(f"   Executing: {step}")
-                simulate_agent_changes(self.work_dir, step)
-            return "task_1"
-
-        def execute_task_sequentially(self, task_id):
-            """Mock sequential execution."""
-            print(f"⚡ Executing task {task_id} sequentially")
-            return "Task completed successfully"
-
-    return MockProgrammerAgent(work_dir)
-
+    print(f"✅ Loaded programmer agent from {config_path}")
+    return agent
 
 def demonstrate_programmer_agent_workflow():
     """Demonstrate the complete programmer agent workflow."""
@@ -328,28 +219,10 @@ def demonstrate_programmer_agent_workflow():
         # Step 4: Execute task iteratively
         print("\n⚡ Starting iterative task execution...")
 
-        # For real agent, use task decomposition and set execution functions
-        if hasattr(agent, 'decompose_task'):
-            result = agent.handle_complex_query(task)
-            print(f"Result: {result}")
-        else:
-            # For mock agent, simulate step-by-step execution
-            steps = [
-                "Fix the bug in multiply method",
-                "Add power function to Calculator class", 
-                "Update tests for power function",
-                "Update README documentation"
-            ]
-
-            for i, step in enumerate(steps, 1):
-                print(f"\n📝 Step {i}: {step}")
-                response = agent.chat(step)
-                print(f"🤖 Agent: {response}")
-
-                # Simulate the agent actually making changes
-                simulate_agent_changes(work_dir, step)
-                agent.tasks_completed.append(step)
-
+        
+        result = agent.handle_complex_query(task)
+        print(f"Result: {result}")
+    
         # Step 5: Verify results
         print("\n✅ Verifying results...")
         verify_changes(work_dir)
@@ -366,104 +239,7 @@ def demonstrate_programmer_agent_workflow():
             shutil.rmtree(work_dir)
             print(f"🧹 Cleaned up workspace: {work_dir}")
 
-
-def simulate_agent_changes(work_dir: Path, step: str):
-    """Simulate the changes a real agent would make using direct file operations."""
-    
-    if "multiply method" in step:
-        # Read the current file content and fix the multiply bug
-        calculator_file = work_dir / "src" / "calculator.py"
-        with open(calculator_file, 'r') as f:
-            content = f.read()
-        new_content = content.replace("        return a + b  # BUG: Should be a * b", "        return a * b")
-        with open(calculator_file, 'w') as f:
-            f.write(new_content)
-        print("   🔧 Fixed multiply method bug")
-
-    elif "update tests" in step.lower():
-        # Read the current test file and add power function tests
-        test_file = work_dir / "tests" / "test_calculator.py"
-        with open(test_file, 'r') as f:
-            content = f.read()
-        
-        # Check if test already exists
-        if "def test_power" in content:
-            return
-        
-        # Add test method before the divide by zero test
-        test_method = """
-    def test_power(self):
-        \"\"\"Test exponentiation.\"\"\" 
-        self.assertEqual(self.calc.power(2, 3), 8)
-        self.assertEqual(self.calc.power(5, 0), 1)
-        self.assertEqual(self.calc.power(10, 2), 100)
-"""
-        
-        # Insert before the divide by zero test
-        insert_pos = content.find("    def test_divide_by_zero")
-        if insert_pos != -1:
-            new_content = content[:insert_pos] + test_method + "\n" + content[insert_pos:]
-            with open(test_file, 'w') as f:
-                f.write(new_content)
-        print("   🧪 Added power function tests")
-
-    elif "update readme" in step.lower():
-        # Update README with new features
-        readme_content = """# Calculator Project
-
-A simple calculator application with basic arithmetic operations.
-
-## Features
-
-- Addition
-- Subtraction
-- Multiplication
-- Division
-- Exponentiation (power function)
-
-## Usage
-
-```bash
-python src/calculator.py
-```
-
-## Testing
-
-```bash
-python -m pytest tests/
-```
-"""
-        readme_file = work_dir / "README.md"
-        with open(readme_file, 'w') as f:
-            f.write(readme_content)
-        print("   📚 Updated README documentation")
-
-    elif "power function" in step:
-        # Read the current file content
-        calculator_file = work_dir / "src" / "calculator.py"
-        with open(calculator_file, 'r') as f:
-            content = f.read()
-        
-        # Check if power function already exists
-        if "def power" in content:
-            return
-        
-        # Find the divide method and add power method after it
-        power_method = """
-
-    def power(self, base, exponent):
-        \"\"\"Calculate base raised to the power of exponent.\"\"\" 
-        return base ** exponent
-"""
-        
-        # Insert after the divide method
-        divide_end = content.find("        return a / b")
-        if divide_end != -1:
-            insert_pos = divide_end + len("        return a / b")
-            new_content = content[:insert_pos] + power_method + "\n" + content[insert_pos:]
-            with open(calculator_file, 'w') as f:
-                f.write(new_content)
-        print("   ➕ Added power function")
+     
 def verify_changes(work_dir: Path):
     """Verify that the agent's changes were applied correctly."""
     context = ToolExecutionContext(settings={"workingdir": str(work_dir)}, agent_id="verify", session_id="verify")

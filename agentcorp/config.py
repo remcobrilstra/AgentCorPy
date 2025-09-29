@@ -3,6 +3,8 @@ from dataclasses import dataclass, asdict
 import json
 import os
 
+from agentcorp.agent import Agent
+
 
 @dataclass
 class AgentConfig:
@@ -66,7 +68,7 @@ def create_agent_from_config(config: AgentConfig, api_keys: Optional[Dict[str, s
         config: AgentConfig object
         api_keys: Dictionary of API keys, keyed by provider name
     """
-    from .providers import OpenAIProvider, AnthropicProvider
+    from .providers import OpenAIProvider, AnthropicProvider, XAIProvider
 
     # Get API key
     if api_keys and config.provider in api_keys:
@@ -84,6 +86,8 @@ def create_agent_from_config(config: AgentConfig, api_keys: Optional[Dict[str, s
         provider = OpenAIProvider(api_key, model=config.model)
     elif config.provider.lower() == "anthropic":
         provider = AnthropicProvider(api_key)
+    elif config.provider.lower() == "xai":
+        provider = XAIProvider(api_key, model=config.model)
     else:
         raise ValueError(f"Unsupported provider: {config.provider}")
 

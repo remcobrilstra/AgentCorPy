@@ -44,7 +44,7 @@ def read_file(context: ToolExecutionContext, file_path: str, encoding: str = "ut
 
 # Create the read_file tool
 read_file_tool = Tool(
-    name="read_file",
+    name="filesys.read_file",
     description="Read the contents of a file. Operations are restricted to the working directory if set in context.",
     function=read_file,
     parameters={

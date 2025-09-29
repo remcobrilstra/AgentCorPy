@@ -39,7 +39,7 @@ def delete_file(context: ToolExecutionContext, file_path: str) -> str:
 
 # Create the delete_file tool
 delete_file_tool = Tool(
-    name="delete_file",
+    name="filesys.delete_file",
     description="Delete a file. Operations are restricted to the working directory if set in context.",
     function=delete_file,
     parameters={

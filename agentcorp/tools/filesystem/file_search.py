@@ -84,7 +84,7 @@ def file_search(context: ToolExecutionContext, query: str, max_results: int = 20
 
 # Create the file_search tool
 file_search_tool = Tool(
-    name="file_search",
+    name="filesys.file_search",
     description="Search for files in the workspace by glob pattern. This only returns the paths of matching files. Limited to 20 results. Use this tool when you know the exact filename pattern of the files you're searching for. Glob patterns match from the root of the workspace folder. Examples:\n- **/*.{js,ts} to match all js/ts files in the workspace.\n- src/** to match all files under the top-level src folder.\n- **/foo/**/*.js to match all js files under any foo folder in the workspace.",
     function=file_search,
     parameters={
