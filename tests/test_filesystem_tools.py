@@ -50,10 +50,10 @@ def test_filesystem_tools():
         grep_tool = global_tool_registry.get_tool("grep_search")
         
         if not all([read_tool, write_tool, replace_tool, delete_tool, search_tool, grep_tool]):
-            print("❌ Error: Not all filesystem tools are registered!")
+            print("[FAIL] Error: Not all filesystem tools are registered!")
             return False
         
-        print("✅ All filesystem tools found in registry")
+        print("[OK] All filesystem tools found in registry")
         
         # Test 3: Write a test file
         print("\n2. Testing write_file:")
@@ -66,7 +66,7 @@ def test_filesystem_tools():
         print(f"Write result: {result}")
         
         if not test_file.exists():
-            print("❌ Error: File was not created!")
+            print("[FAIL] Error: File was not created!")
             return False
         
         # Test 4: Read the test file
@@ -75,7 +75,7 @@ def test_filesystem_tools():
         print(f"Read result: {result[:50]}...")
         
         if result != test_content:
-            print("❌ Error: Read content doesn't match written content!")
+            print("[FAIL] Error: Read content doesn't match written content!")
             return False
         
         # Test 5: Replace text in file
@@ -89,7 +89,7 @@ def test_filesystem_tools():
         # Verify replacement
         result = read_tool.execute(restricted_context, file_path=str(test_file))
         if "AgentCorp Framework" not in result:
-            print("❌ Error: Text replacement failed!")
+            print("[FAIL] Error: Text replacement failed!")
             return False
         
         # Test 5.1: Create additional test files for file_search
@@ -119,7 +119,7 @@ def test_filesystem_tools():
         print(f"Python files search: {result}")
         
         if "main.py" not in result or "helper.py" not in result:
-            print("❌ Error: Python file search failed!")
+            print("[FAIL] Error: Python file search failed!")
             return False
         
         # Test 5.3: Search in specific directory
@@ -128,7 +128,7 @@ def test_filesystem_tools():
         print(f"Src directory search: {result}")
         
         if "main.py" not in result:
-            print("❌ Error: Directory-specific search failed!")
+            print("[FAIL] Error: Directory-specific search failed!")
             return False
         
         # Test 5.4: Search for specific file type
@@ -137,7 +137,7 @@ def test_filesystem_tools():
         print(f"JSON files search: {result}")
         
         if "package.json" not in result:
-            print("❌ Error: JSON file search failed!")
+            print("[FAIL] Error: JSON file search failed!")
             return False
         
         # Test 5.5: Search with no results
@@ -146,7 +146,7 @@ def test_filesystem_tools():
         print(f"No matches search: {result}")
         
         if "No files found" not in result:
-            print("❌ Error: No matches handling failed!")
+            print("[FAIL] Error: No matches handling failed!")
             return False
         
         # Test 5.6: Test grep_search - plain text search
@@ -155,7 +155,7 @@ def test_filesystem_tools():
         print(f"Grep search result: {result}")
         
         if "#" not in result or "config.py" not in result:
-            print("❌ Error: Plain text grep search failed!")
+            print("[FAIL] Error: Plain text grep search failed!")
             return False
         
         # Test 5.7: Test grep_search - regex search
@@ -164,7 +164,7 @@ def test_filesystem_tools():
         print(f"Regex grep search result: {result}")
         
         if "Configuration file" not in result:
-            print("❌ Error: Regex grep search failed!")
+            print("[FAIL] Error: Regex grep search failed!")
             return False
         
         # Test 5.8: Test grep_search - no matches
@@ -173,7 +173,7 @@ def test_filesystem_tools():
         print(f"No matches grep search: {result}")
         
         if "No matches found" not in result:
-            print("❌ Error: No matches grep handling failed!")
+            print("[FAIL] Error: No matches grep handling failed!")
             return False
         
         # Test 6: Test working directory restrictions
@@ -186,7 +186,7 @@ def test_filesystem_tools():
         print(f"Write outside working dir: {result}")
         
         if "Access denied" not in result:
-            print("❌ Error: Working directory restriction not enforced!")
+            print("[FAIL] Error: Working directory restriction not enforced!")
             return False
         
         # Test 7: Test without working directory restriction
@@ -208,7 +208,7 @@ def test_filesystem_tools():
         print(f"Delete result: {result}")
         
         if test_file.exists():
-            print("❌ Error: File was not deleted!")
+            print("[FAIL] Error: File was not deleted!")
             return False
         
         # Test 9: Error handling - try to read deleted file
@@ -217,14 +217,14 @@ def test_filesystem_tools():
         print(f"Read deleted file: {result}")
         
         if "does not exist" not in result:
-            print("❌ Error: Error handling for missing file failed!")
+            print("[FAIL] Error: Error handling for missing file failed!")
             return False
         
-        print("\n✅ All filesystem tools tests passed!")
+        print("\n[OK] All filesystem tools tests passed!")
         return True
         
     except Exception as e:
-        print(f"❌ Error during testing: {e}")
+        print(f"[FAIL] Error during testing: {e}")
         import traceback
         traceback.print_exc()
         return False
@@ -250,10 +250,10 @@ def test_tool_registration():
     missing_tools = [tool for tool in expected_tools if tool not in registered_tools]
     
     if missing_tools:
-        print(f"❌ Missing tools: {missing_tools}")
+        print(f"[FAIL] Missing tools: {missing_tools}")
         return False
     
-    print("✅ All filesystem tools are properly registered!")
+    print("[OK] All filesystem tools are properly registered!")
     
     # Test tool schema formats
     for tool_name in expected_tools:
@@ -273,16 +273,16 @@ def test_tool_registration():
         if tool_name == "read_file":
             required = openai_format['function']['parameters']['required']
             if "file_path" not in required:
-                print(f"❌ Error: {tool_name} missing required file_path parameter!")
+                print(f"[FAIL] Error: {tool_name} missing required file_path parameter!")
                 return False
         
         elif tool_name == "write_file":
             required = openai_format['function']['parameters']['required']
             if not all(param in required for param in ["file_path", "content"]):
-                print(f"❌ Error: {tool_name} missing required parameters!")
+                print(f"[FAIL] Error: {tool_name} missing required parameters!")
                 return False
     
-    print("✅ All tool schemas are valid!")
+    print("[OK] All tool schemas are valid!")
     return True
 
 
@@ -296,13 +296,13 @@ if __name__ == "__main__":
         success &= test_filesystem_tools()
         
         if success:
-            print("\n🎉 All tests passed! Filesystem tools are ready to use.")
+            print("\n[SUCCESS] All tests passed! Filesystem tools are ready to use.")
         else:
-            print("\n❌ Some tests failed. Please check the implementation.")
+            print("\n[FAIL] Some tests failed. Please check the implementation.")
             sys.exit(1)
             
     except Exception as e:
-        print(f"❌ Test setup error: {e}")
+        print(f"[FAIL] Test setup error: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)

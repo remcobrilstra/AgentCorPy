@@ -33,7 +33,7 @@ def test_task_hierarchy():
         assert subtask.parent_task == task
         assert not subtask.is_complex()
 
-    print("✓ Task hierarchy test passed")
+    print("[PASS] Task hierarchy test passed")
 
 
 def test_task_execution():
@@ -55,7 +55,7 @@ def test_task_execution():
     result = task.execute(agent)
     assert "Executed via LLM: Simple task" in result
 
-    print("✓ Task execution test passed")
+    print("[PASS] Task execution test passed")
 
 
 def test_sequential_execution():
@@ -88,7 +88,7 @@ def test_sequential_execution():
     assert execution_count == 4  # 3 subtasks + 1 main task
     assert task.status == TaskStatus.COMPLETED
 
-    print("✓ Sequential execution test passed")
+    print("[PASS] Sequential execution test passed")
 
 
 def test_tool_context():
@@ -117,7 +117,7 @@ def test_tool_context():
     }, context)
 
     assert "Processed hello with setting: test_value" in result
-    print("✓ Tool context test passed")
+    print("[PASS] Tool context test passed")
 
 
 def test_web_fetch():
@@ -142,9 +142,9 @@ def test_web_fetch():
         assert len(result) > 0, "Result is empty"
         assert "# Herman Melville" in result, f"'# Herman Melville' not found in result: {result[:200]}"
 
-        print("✓ Web fetch test passed")
+        print("[PASS] Web fetch test passed")
     except Exception as e:
-        print(f"❌ Web fetch test failed: {e}")
+        print(f"[FAIL] Web fetch test failed: {e}")
         raise
 
 
@@ -158,8 +158,8 @@ if __name__ == "__main__":
         test_tool_context()
         test_web_fetch()
 
-        print("\n✅ All tests passed! Framework is ready for complex task and tool context handling.")
+        print("\n[OK] All tests passed! Framework is ready for complex task and tool context handling.")
 
     except Exception as e:
-        print(f"\n❌ Test failed: {e}")
+        print(f"\n[FAIL] Test failed: {e}")
         sys.exit(1)

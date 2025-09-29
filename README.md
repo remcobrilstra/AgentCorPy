@@ -113,6 +113,34 @@ Example log output:
 3. Activate the environment: `.venv\Scripts\activate` (Windows)
 4. Install dependencies: `pip install openai anthropic xai`
 
+## Testing
+
+The framework includes comprehensive tests organized in the `tests/` directory:
+
+- `tests/test_framework.py` - Core framework functionality tests (tasks, tool context, web tools)
+- `tests/test_filesystem_tools.py` - Filesystem tool registration and basic functionality tests
+- `tests/test_filesystem_tools_integration.py` - Comprehensive integration tests for filesystem tools
+
+### Running Tests
+
+To run all tests, use the unified test runner:
+
+```bash
+python run_tests.py
+```
+
+This will execute all test suites and provide a summary of results. The test runner automatically sets the correct Python path and handles test execution.
+
+### Individual Test Execution
+
+You can also run individual test files directly:
+
+```bash
+python tests/test_framework.py
+python tests/test_filesystem_tools.py
+python tests/test_filesystem_tools_integration.py
+```
+
 ## Usage
 
 ```python
@@ -404,7 +432,7 @@ agent = Agent(
 response = agent.chat("Create a configuration file with default settings")
 ```
 
-See `examples/filesystem_tools_example.py` for a complete demonstration.
+See `tests/test_filesystem_tools_integration.py` for comprehensive tests and examples.
 
 ### Programmer Agent Example
 
