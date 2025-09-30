@@ -68,7 +68,9 @@ Current task to complete: {self.description}
 
 Use your available tools and knowledge to complete this task. Provide the result or confirmation when done."""
 
+        logger.info(f"Executing Task {self.id}: {self.description}")
         result = agent.chat(prompt, add_to_memory=True)
+        logger.info(f"Completed Task {self.id}: {self.description}")
         logger.log_task_action("execution_completed", self.id, self.description, result=str(result)[:100] + "..." if len(str(result)) > 100 else str(result))
         return result
 

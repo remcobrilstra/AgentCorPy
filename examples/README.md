@@ -101,6 +101,42 @@ export PROVIDER=anthropic
 python examples/tool_context_example.py
 ```
 
+### `chat_with_code_assistant.py`
+
+Demonstrates an interactive chat session with the Code Assistant agent:
+
+- **Interactive Chat**: Real-time conversation with the coding assistant
+- **Working Directory Setup**: Configure the agent's working directory before starting
+- **File Reading Tools**: Access to filesystem tools for code analysis
+- **Provider Flexibility**: Works with OpenAI, Anthropic, or xAI providers
+
+**Key Features Demonstrated:**
+- Loading agents from configuration files
+- Interactive chat interface
+- Working directory configuration
+- Error handling and user input validation
+
+**Usage:**
+```bash
+# Set your API key
+export OPENAI_API_KEY="your-key-here"
+
+# Run the chat script
+python examples/chat_with_code_assistant.py
+
+# Or use Anthropic
+export ANTHROPIC_API_KEY="your-key-here"
+export PROVIDER=anthropic
+python examples/chat_with_code_assistant.py
+```
+
+**What it does:**
+1. Prompts for working directory (defaults to current)
+2. Loads the Code Assistant agent from configuration
+3. Starts an interactive chat session
+4. Processes user messages and displays agent responses
+5. Continues until user types 'quit', 'exit', or 'bye'
+
 ### `agent_config_example.py`
 
 Demonstrates loading and saving agent configurations from/to JSON files:

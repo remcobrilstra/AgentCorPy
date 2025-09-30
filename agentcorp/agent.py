@@ -101,6 +101,9 @@ class Agent:
         """Use the LLM to decompose a complex task into subtasks"""
         prompt = f"""
         Break down the following complex task into smaller, sequential, manageable subtasks.
+        Keep the amount of subtasks reasonable (5-10), and ensure they are actionable.
+        Make the descriptions short and concise.
+        You can always iterate on the subtasks later if needed, keep the list as short as possible to achieve the goal.
         Provide the subtasks as a numbered list.
 
         Task: {task_description}

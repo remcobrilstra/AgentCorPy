@@ -1,10 +1,18 @@
 {
   "name": "CodeAssistant",
   "description": "A helpful coding assistant with file reading capabilities",
-  "model": "gpt-4",
-  "provider": "openai",
-  "system_prompt": "You are an expert coding assistant. Help users with programming tasks, code review, and technical questions. You have access to file reading tools to analyze codebases.",
-  "tools": ["read_file"],
+  "model": "grok-code-fast-1",
+  "provider": "xai",
+  "system_prompt": {"file": "code_assistant"},
+  "tools": [
+    "filesys.read_file", 
+    "filesys.write_file", 
+    "filesys.replace_in_file", 
+    "filesys.delete_file", 
+    "filesys.file_search", 
+    "filesys.grep_search",
+    "terminal.run_command"
+  ],
   "context_settings": {
     "allowed_base_path": ".",
     "security_level": "developer"

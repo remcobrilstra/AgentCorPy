@@ -4,7 +4,7 @@ Write file tool for the AgentCorp framework
 
 from ...tool_registry import Tool, global_tool_registry, ToolExecutionContext
 from .utils import _validate_path
-
+from ...logging import logger
 
 def write_file(context: ToolExecutionContext, file_path: str, content: str, encoding: str = "utf-8", create_dirs: bool = True) -> str:
     """
@@ -25,6 +25,7 @@ def write_file(context: ToolExecutionContext, file_path: str, content: str, enco
         return error_msg
 
     try:
+        logger.info(f"Writing to file [{file_path}]")
         # Create parent directories if requested
         if create_dirs:
             resolved_path.parent.mkdir(parents=True, exist_ok=True)

@@ -30,7 +30,7 @@ def test_agent_config_from_dict():
 
         assert config.name == "TestAgent"
         assert config.system_prompt == "You are a test assistant."
-        assert config.tools == ["read_file"]
+        assert config.tools == ["filesys.read_file"]
 
         print("PASS AgentConfig from dict with direct prompt")
     except Exception as e:
@@ -78,7 +78,7 @@ def test_agent_config_from_json_file():
 
         assert config.name == "CodeAssistant"
         assert "coding assistant" in config.system_prompt.lower()
-        assert config.tools == ["read_file"]
+        assert config.tools == ["filesys.read_file"]
 
         print("PASS AgentConfig from JSON file")
     except Exception as e:

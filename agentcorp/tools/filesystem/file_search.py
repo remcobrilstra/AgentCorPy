@@ -6,7 +6,7 @@ import glob
 from pathlib import Path
 
 from ...tool_registry import Tool, global_tool_registry, ToolExecutionContext
-
+from ...logging import logger
 
 def file_search(context: ToolExecutionContext, query: str, max_results: int = 20) -> str:
     """
@@ -33,6 +33,7 @@ def file_search(context: ToolExecutionContext, query: str, max_results: int = 20
         search_root = Path.cwd()
 
     try:
+        logger.info(f"Searching for files [{query}]")
         # Ensure the query doesn't try to escape the working directory
         if ".." in query or query.startswith("/") or query.startswith("\\"):
             if workingdir:

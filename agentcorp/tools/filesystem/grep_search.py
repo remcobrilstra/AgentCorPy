@@ -5,6 +5,7 @@ Grep search tool for the AgentCorp framework
 import re
 import glob
 from pathlib import Path
+from ...logging import logger
 
 from ...tool_registry import Tool, global_tool_registry, ToolExecutionContext
 
@@ -36,6 +37,7 @@ def grep_search(context: ToolExecutionContext, query: str, include_pattern: str 
         search_root = Path.cwd()
 
     try:
+        logger.info(f"Searching for pattern [{query}] in files matching [{include_pattern}]")
         # Validate include pattern for security
         if ".." in include_pattern or include_pattern.startswith("/") or include_pattern.startswith("\\"):
             if workingdir:

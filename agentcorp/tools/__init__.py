@@ -6,3 +6,4 @@ Tools package for AgentCorp framework
 from . import web
 from . import filesystem
 from . import taskmanagement
+from . import terminal

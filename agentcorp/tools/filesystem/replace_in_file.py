@@ -4,7 +4,7 @@ Replace in file tool for the AgentCorp framework
 
 from ...tool_registry import Tool, global_tool_registry, ToolExecutionContext
 from .utils import _validate_path
-
+from ...logging import logger
 
 def replace_in_file(context: ToolExecutionContext, file_path: str, old_text: str, new_text: str, encoding: str = "utf-8", count: int = -1) -> str:
     """
@@ -26,6 +26,7 @@ def replace_in_file(context: ToolExecutionContext, file_path: str, old_text: str
         return error_msg
 
     try:
+        logger.info(f"Replacing text in file [{file_path}]")
         if not resolved_path.exists():
             return f"Error: File {file_path} does not exist"
 

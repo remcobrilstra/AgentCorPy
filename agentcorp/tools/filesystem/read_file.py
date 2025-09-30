@@ -4,7 +4,7 @@ Read file tool for the AgentCorp framework
 
 from ...tool_registry import Tool, global_tool_registry, ToolExecutionContext
 from .utils import _validate_path
-
+from ...logging import logger
 
 def read_file(context: ToolExecutionContext, file_path: str, encoding: str = "utf-8") -> str:
     """
@@ -23,6 +23,7 @@ def read_file(context: ToolExecutionContext, file_path: str, encoding: str = "ut
         return error_msg
 
     try:
+        logger.info(f"Reading file [{file_path}]")
         if not resolved_path.exists():
             return f"Error: File {file_path} does not exist"
 

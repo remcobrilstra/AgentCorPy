@@ -4,6 +4,7 @@ Delete file tool for the AgentCorp framework
 
 from ...tool_registry import Tool, global_tool_registry, ToolExecutionContext
 from .utils import _validate_path
+from ...logging import logger
 
 
 def delete_file(context: ToolExecutionContext, file_path: str) -> str:
@@ -29,6 +30,7 @@ def delete_file(context: ToolExecutionContext, file_path: str) -> str:
             return f"Error: {file_path} is not a file (use a directory deletion tool for directories)"
 
         resolved_path.unlink()
+        logger.info(f"Deleted file [{file_path}]")
         return f"Successfully deleted file {file_path}"
 
     except PermissionError:
