@@ -211,13 +211,35 @@ Agents can be defined using JSON configuration files. Example structure:
 }
 ```
 
+### System Prompt Options
+
+The `system_prompt` field supports two formats:
+
+1. **Direct string** (backward compatible):
+   ```json
+   "system_prompt": "You are a helpful assistant."
+   ```
+
+2. **File reference with parameters**:
+   ```json
+   "system_prompt": {
+     "file": "data_analyst",
+     "params": {
+       "AGENT_NAME": "DataAnalyzer",
+       "ANALYSIS_TYPE": "statistical and exploratory"
+     }
+   }
+   ```
+
+   This loads a prompt from `prompts/data_analyst.md` and replaces `{{AGENT_NAME}}` and `{{ANALYSIS_TYPE}}` with the provided values.
+
 See `agent_configs/` directory for example configurations and `examples/agent_config_example.py` for usage.
 
 ## Supported Providers
 
 - **OpenAI**: GPT models with tool calling
 - **Anthropic**: Claude models with tool calling
-- **xAI**: Grok models including grok-4-fast (tool calling not yet supported)
+- **xAI**: Grok models including grok-4-fast
 
 ## Running the Example
 

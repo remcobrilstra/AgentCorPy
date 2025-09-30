@@ -36,7 +36,7 @@ def run_test_file(test_file_path, description):
 
         success = result.returncode == 0
         status = "✅ PASSED" if success else "❌ FAILED"
-        print(f"\n{status}: {description}")
+        print(f"{status}: {description}")
 
         return success
 
@@ -58,6 +58,7 @@ def main():
         (tests_dir / "test_framework.py", "Framework Core Tests"),
         (tests_dir / "test_filesystem_tools.py", "Filesystem Tools Tests"),
         (tests_dir / "test_filesystem_tools_integration.py", "Filesystem Tools Integration Tests"),
+        (tests_dir / "test_agent.py", "Agent and Prompt Tests"),
     ]
 
     # Check if test files exist

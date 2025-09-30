@@ -12,13 +12,35 @@ Each agent configuration is a JSON file with the following structure:
   "description": "Description",  // Optional: Agent description
   "model": "model-name",         // Required: Model identifier
   "provider": "provider-name",   // Required: "openai" or "anthropic"
-  "system_prompt": "Prompt",     // Required: System prompt
+  "system_prompt": "Prompt",     // Required: System prompt (string or object)
   "tools": ["tool1", "tool2"],   // Optional: List of tool names
   "context_settings": {          // Optional: Tool execution settings
     "setting1": "value1"
   }
 }
 ```
+
+### System Prompt Options
+
+The `system_prompt` field supports two formats:
+
+1. **Direct string** (backward compatible):
+   ```json
+   "system_prompt": "You are a helpful assistant."
+   ```
+
+2. **File reference with parameters**:
+   ```json
+   "system_prompt": {
+     "file": "prompt_name",
+     "params": {
+       "PARAM1": "value1",
+       "PARAM2": "value2"
+     }
+   }
+   ```
+
+   This loads a prompt from `prompts/prompt_name.md` and replaces `{{PARAM1}}`, `{{PARAM2}}` etc. with the provided values.
 
 ## Example Configurations
 
@@ -32,6 +54,7 @@ A coding assistant with file reading capabilities:
 A data analysis agent with calculation tools:
 - Uses Claude 3 Sonnet via Anthropic
 - Has access to calculation and file reading tools
+- Uses a prompt file reference with parameters for specialized data analysis instructions
 - Restricted to `./data` directory
 
 ### `minimal_assistant.json`

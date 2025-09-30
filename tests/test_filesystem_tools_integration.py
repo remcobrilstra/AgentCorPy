@@ -35,12 +35,12 @@ class TestFilesystemToolsIntegration(unittest.TestCase):
         )
 
         # Get tools from registry
-        self.read_tool = global_tool_registry.get_tool("read_file")
-        self.write_tool = global_tool_registry.get_tool("write_file")
-        self.replace_tool = global_tool_registry.get_tool("replace_in_file")
-        self.delete_tool = global_tool_registry.get_tool("delete_file")
-        self.search_tool = global_tool_registry.get_tool("file_search")
-        self.grep_tool = global_tool_registry.get_tool("grep_search")
+        self.read_tool = global_tool_registry.get_tool("filesys.read_file")
+        self.write_tool = global_tool_registry.get_tool("filesys.write_file")
+        self.replace_tool = global_tool_registry.get_tool("filesys.replace_in_file")
+        self.delete_tool = global_tool_registry.get_tool("filesys.delete_file")
+        self.search_tool = global_tool_registry.get_tool("filesys.file_search")
+        self.grep_tool = global_tool_registry.get_tool("filesys.grep_search")
 
     def tearDown(self):
         """Clean up test fixtures"""
@@ -49,7 +49,7 @@ class TestFilesystemToolsIntegration(unittest.TestCase):
 
     def test_tools_are_registered(self):
         """Test that all filesystem tools are properly registered"""
-        expected_tools = ["read_file", "write_file", "replace_in_file", "delete_file", "file_search", "grep_search"]
+        expected_tools = ["filesys.read_file", "filesys.write_file", "filesys.replace_in_file", "filesys.delete_file", "filesys.file_search", "filesys.grep_search"]
 
         for tool_name in expected_tools:
             with self.subTest(tool=tool_name):
@@ -220,7 +220,7 @@ class TestFilesystemToolsIntegration(unittest.TestCase):
 
     def test_tool_schema_formats(self):
         """Test that tools can be converted to different provider formats"""
-        tools_to_test = ["read_file", "write_file", "replace_in_file", "delete_file", "file_search", "grep_search"]
+        tools_to_test = ["filesys.read_file", "filesys.write_file", "filesys.replace_in_file", "filesys.delete_file", "filesys.file_search", "filesys.grep_search"]
 
         for tool_name in tools_to_test:
             with self.subTest(tool=tool_name):

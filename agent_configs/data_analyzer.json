@@ -3,7 +3,13 @@
   "description": "A data analysis agent with calculation and file processing capabilities",
   "model": "claude-3-sonnet-20240229",
   "provider": "anthropic",
-  "system_prompt": "You are a data analysis expert. Help users analyze data, perform calculations, and process information. You have access to calculation tools and can read data files.",
+  "system_prompt": {
+    "file": "data_analyst",
+    "params": {
+      "AGENT_NAME": "DataAnalyzer",
+      "ANALYSIS_TYPE": "statistical and exploratory"
+    }
+  },
   "tools": ["calculate", "read_file"],
   "context_settings": {
     "allowed_base_path": "./data",

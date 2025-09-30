@@ -29,6 +29,7 @@ class Agent:
             settings=context_settings or {},
             agent_id=str(id(self)),
             session_id="",  # Can be set later if needed
+            task_manager=self.task_manager
         )
 
         if system_prompt:

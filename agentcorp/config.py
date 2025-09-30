@@ -1,9 +1,10 @@
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Union
 from dataclasses import dataclass, asdict
 import json
 import os
 
 from agentcorp.agent import Agent
+from . import prompt_utils
 
 
 @dataclass
@@ -11,7 +12,7 @@ class AgentConfig:
     """Configuration for creating an Agent instance"""
     model: str
     provider: str
-    system_prompt: str
+    system_prompt: Union[str, Dict[str, Any]]
     tools: List[str]
     name: Optional[str] = None
     description: Optional[str] = None
@@ -24,12 +25,22 @@ class AgentConfig:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'AgentConfig':
         """Create AgentConfig from dictionary"""
+        system_prompt = data['system_prompt']
+        if isinstance(system_prompt, dict):
+            # Resolve prompt from file
+            file_name = system_prompt.get('file')
+            if not file_name:
+                raise ValueError("Prompt file reference must include 'file' key")
+            params = system_prompt.get('params', {})
+            prompt_data = prompt_utils.load_prompt(file_name, **params)
+            system_prompt = prompt_data['content']
+        
         return cls(
             name=data.get('name'),
             description=data.get('description'),
             model=data['model'],
             provider=data['provider'],
-            system_prompt=data['system_prompt'],
+            system_prompt=system_prompt,
             tools=data.get('tools', []),
             context_settings=data.get('context_settings', {})
         )
