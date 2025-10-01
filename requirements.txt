@@ -3,3 +3,5 @@ anthropic>=0.1.0
 requests-html>=0.10.0
 html2text>=2020.1.16
 python-dotenv>=1.0.0
+tiktoken>=0.5.0
+ddgs>=9.6.0

@@ -11,7 +11,8 @@ from .logging import logger
 class Agent:
     def __init__(self, provider: Provider, system_prompt: str = "", tool_names: Optional[List[str]] = None, context_settings: Optional[Dict[str, str]] = None):
         self.provider = provider
-        self.memory = Memory()
+        provider_name = provider.__class__.__name__.replace('Provider', '').lower()
+        self.memory = Memory(provider=provider_name, model=provider.model)
         self.task_manager = TaskManager()
 
         # Optional attributes
@@ -45,9 +46,11 @@ class Agent:
                 response = self.provider.chat_with_tools(self.memory.get_messages(), tools_format, **kwargs)
                 content = response.get("content", "")
                 tool_calls = response.get("tool_calls", [])
+                usage = response.get("usage")
+                output_tokens = getattr(usage, 'completion_tokens', getattr(usage, 'output_tokens', 0)) if usage else 0
 
                 if add_to_memory:
-                    self.memory.add_message("assistant", content, tool_calls=tool_calls)
+                    self.memory.add_response_message("assistant", content, output_tokens, tool_calls=tool_calls)
 
                 if not tool_calls:
                     return content
@@ -69,9 +72,12 @@ class Agent:
 
         else:
             response = self.provider.chat(self.memory.get_messages(), **kwargs)
+            content = response.get("content", "")
+            usage = response.get("usage")
+            output_tokens = getattr(usage, 'completion_tokens', getattr(usage, 'output_tokens', 0)) if usage else 0
             if add_to_memory:
-                self.memory.add_message("assistant", response)
-            return response
+                self.memory.add_response_message("assistant", content, output_tokens)
+            return content
 
     def add_task(self, description: str) -> str:
         task_id = self.task_manager.add_task(description)
@@ -114,7 +120,8 @@ class Agent:
         #self.memory.add_message("system", "You are a task decomposition expert. Break down complex tasks into logical, sequential steps.")
         msg = self.memory.add_message("user", prompt)
 
-        response = self.provider.chat(self.memory.get_messages())
+        response_raw = self.provider.chat(self.memory.get_messages())
+        response = response_raw.get("content", "")
         #self.memory.add_message("assistant", response)
         self.memory.remove_message(msg)
 
@@ -163,12 +170,13 @@ class Agent:
 
         msg1 = self.memory.add_message("user", complexity_prompt)
         complexity_response = self.provider.chat(self.memory.get_messages())
+        content = complexity_response.get("content", "")
         msg2 = self.memory.add_message("assistant", complexity_response)
 
         self.memory.remove_message(msg1)
         self.memory.remove_message(msg2)
 
-        if "YES" in complexity_response.upper():
+        if "YES" in content.upper():
             # Decompose and execute
             task_id = self.decompose_task(query)
             result = self.execute_task_sequentially(task_id)

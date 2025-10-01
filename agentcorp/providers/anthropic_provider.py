@@ -1,5 +1,5 @@
 from typing import List, Dict, Any
-from .base import Provider, Message
+from .base import Provider, Message, retry_on_connection_error
 from ..tool_registry import Tool
 import anthropic
 import json
@@ -10,7 +10,8 @@ class AnthropicProvider(Provider):
         super().__init__(api_key, model)
         self.client = anthropic.Anthropic(api_key=api_key)
 
-    def chat(self, messages: List[Message], **kwargs) -> str:
+    @retry_on_connection_error()
+    def chat(self, messages: List[Message], **kwargs) -> Dict[str, Any]:
         # Convert to Anthropic format
         system_message = None
         anthropic_messages = []
@@ -43,11 +44,15 @@ class AnthropicProvider(Provider):
             messages=anthropic_messages,
             **kwargs
         )
-        return response.content[0].text
+        return {
+            "content": response.content[0].text,
+            "usage": response.usage
+        }
 
     def supports_tools(self) -> bool:
         return True
 
+    @retry_on_connection_error()
     def chat_with_tools(self, messages: List[Message], tools: List[Dict[str, Any]], **kwargs) -> Dict[str, Any]:
         # Convert tools to Anthropic format
         anthropic_tools = []
@@ -100,7 +105,7 @@ class AnthropicProvider(Provider):
             **kwargs
         )
 
-        result = {"content": "", "tool_calls": []}
+        result = {"content": "", "tool_calls": [], "usage": response.usage}
         for content_block in response.content:
             if content_block.type == "text":
                 result["content"] += content_block.text

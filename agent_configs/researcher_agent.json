@@ -1,0 +1,17 @@
+{
+  "name": "10x Researcher Agent",
+  "description": "A high-performance research agent that uses web search and fetch tools to find and digest information",
+  "model": "grok-4-fast-reasoning",
+  "provider": "xai",
+  "system_prompt": {
+    "file": "researcher",
+    "params": {
+      "AGENT_NAME": "10x Researcher"
+    }
+  },
+  "tools": ["web_search", "web_fetch"],
+  "context_settings": {
+    "max_operations": "100",
+    "security_level": "researcher"
+  }
+}

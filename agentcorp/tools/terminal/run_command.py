@@ -62,7 +62,7 @@ def run_command(context: ToolExecutionContext, command: str, shell: str = "pwsh.
 # Create the run_command tool
 run_command_tool = Tool(
     name="terminal.run_command",
-    description="Run a command in the terminal. The working directory is set to the context's workingdir, and all operations are restricted to stay within that directory.",
+    description="Run a command in the terminal. The working directory is set to the context's workingdir, and all operations are restricted to stay within that directory. Don't use commands that run indefinitely or require user interaction (like 'npm run dev').",
     function=run_command,
     parameters={
         "type": "object",

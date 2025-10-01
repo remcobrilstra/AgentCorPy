@@ -1,6 +1,6 @@
 from typing import List, Dict, Any
 import requests
-from .base import Provider, Message
+from .base import Provider, Message, retry_on_connection_error
 from ..tool_registry import Tool
 
 
@@ -9,6 +9,7 @@ class XAIProvider(Provider):
         super().__init__(api_key, model)
         self.base_url = "https://api.x.ai/v1"
 
+    @retry_on_connection_error()
     def chat(self, messages: List[Message], **kwargs) -> str:
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -40,11 +41,15 @@ class XAIProvider(Provider):
             raise Exception(f"xAI API error: {response.status_code} - {response.text}")
 
         result = response.json()
-        return result["choices"][0]["message"]["content"]
+        return {
+            "content": result["choices"][0]["message"]["content"],
+            "usage": result.get("usage")
+        }
 
     def supports_tools(self) -> bool:
         return True  # Assuming xAI supports tools
 
+    @retry_on_connection_error()
     def chat_with_tools(self, messages: List[Message], tools: List[Dict[str, Any]], **kwargs) -> Dict[str, Any]:
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -81,7 +86,7 @@ class XAIProvider(Provider):
 
         result = response.json()
         message = result["choices"][0]["message"]
-        response_dict = {"content": message.get("content", ""), "tool_calls": []}
+        response_dict = {"content": message.get("content", ""), "tool_calls": [], "usage": result.get("usage")}
         if "tool_calls" in message:
             response_dict["tool_calls"] = [
                 {

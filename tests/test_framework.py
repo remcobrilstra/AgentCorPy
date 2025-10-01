@@ -10,6 +10,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from agentcorp import Agent, Task, TaskManager, TaskStatus, Tool, global_tool_registry, ToolExecutionContext
+from agentcorp.memory import Memory
+from agentcorp.models import get_model_info
 
 
 def test_task_hierarchy():
@@ -150,6 +152,47 @@ def test_web_fetch():
         raise
 
 
+def test_model_info():
+    """Test model info retrieval"""
+    try:
+        info = get_model_info("openai", "gpt-3.5-turbo")
+        assert info["input_cost"] == 1.5
+        assert info["output_cost"] == 2.0
+        assert info["context_size"] == 16385
+        print("PASS Model info")
+    except Exception as e:
+        print(f"FAIL Model info: {e}")
+        raise
+
+
+def test_memory_token_tracking():
+    """Test memory token tracking and cost calculation"""
+    try:
+        memory = Memory(provider="openai", model="gpt-3.5-turbo")
+        
+        # Add a message
+        msg = memory.add_message("user", "Hello world")
+        assert msg.input_tokens > 0
+        assert memory.total_input_tokens == msg.input_tokens
+        
+        # Add response
+        response_msg = memory.add_response_message("assistant", "Hi there", 10)
+        assert response_msg.output_tokens == 10
+        assert memory.total_output_tokens == 10
+        
+        # Check costs
+        total_cost = memory.get_total_cost()
+        assert total_cost > 0
+        
+        message_cost = memory.get_message_cost(response_msg)
+        assert message_cost > 0
+        
+        print("PASS Memory token tracking")
+    except Exception as e:
+        print(f"FAIL Memory token tracking: {e}")
+        raise
+
+
 if __name__ == "__main__":
     print("Running framework tests...\n")
 
@@ -159,6 +202,8 @@ if __name__ == "__main__":
         test_sequential_execution()
         test_tool_context()
         test_web_fetch()
+        test_model_info()
+        test_memory_token_tracking()
 
         print("PASS All framework tests passed!")
 

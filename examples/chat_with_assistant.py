@@ -22,28 +22,14 @@ from agentcorp import load_agent_from_file
 os.environ["AGENTCORP_VERBOSE"] = "true"
 
 def main():
-    print("🤖 Chat with Code Assistant Agent")
+    print("🤖 Chat with Assistant Agent")
     print("=" * 40)
-
-    # Ask for working directory
-    working_dir = input("Enter the working directory for the agent (or press Enter 'D:\\Development\\temp\\test-project\\robomatch'): ").strip()
-    if not working_dir:
-        working_dir = "D:\\Development\\temp\\test-project\\robobattle"
-
-    # Validate the directory
-    if not Path(working_dir).exists():
-        print(f"❌ Directory '{working_dir}' does not exist.")
-        return
-
-    print(f"📁 Working directory set to: {working_dir}")
 
     try:
         # Load the code assistant agent
-        config_path = Path(__file__).parent.parent / "agent_configs" / "code_assistant.json"
+        config_path = Path(__file__).parent.parent / "agent_configs" / "researcher_agent.json"
         agent = load_agent_from_file(str(config_path))
 
-        # Update context settings with working directory
-        agent.execution_context.settings["workingdir"] = working_dir
 
         print(f"✅ Loaded agent: {agent.name}")
         print(f"   Description: {agent.description}")

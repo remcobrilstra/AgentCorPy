@@ -11,7 +11,8 @@
     "filesys.delete_file", 
     "filesys.file_search", 
     "filesys.grep_search",
-    "terminal.run_command"
+    "terminal.run_command",
+    "web_search"
   ],
   "context_settings": {
     "allowed_base_path": ".",

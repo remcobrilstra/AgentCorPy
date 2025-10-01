@@ -1,6 +1,42 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any
 from ..tool_registry import Tool
+import time
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+def retry_on_connection_error(max_retries=1, backoff_factor=1.0):
+    """
+    Decorator to retry API calls on connection errors with exponential backoff.
+    
+    Args:
+        max_retries: Maximum number of retry attempts (default: 1)
+        backoff_factor: Backoff multiplier for exponential backoff (default: 1.0)
+    """
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            last_exception = None
+            for attempt in range(max_retries + 1):
+                try:
+                    return func(*args, **kwargs)
+                except (ConnectionError, TimeoutError, OSError) as e:
+                    last_exception = e
+                    if attempt < max_retries:
+                        wait_time = backoff_factor * (2 ** attempt)
+                        logger.warning(f"Connection error on attempt {attempt + 1}, retrying in {wait_time:.1f}s: {e}")
+                        time.sleep(wait_time)
+                    else:
+                        logger.error(f"Connection error on final attempt {attempt + 1}: {e}")
+                except Exception as e:
+                    # For non-connection errors, don't retry
+                    raise e
+            
+            # If we get here, all retries failed
+            raise last_exception
+        return wrapper
+    return decorator
 
 
 class Message:
@@ -10,6 +46,9 @@ class Message:
         self.tool_calls = tool_calls or []
         self.tool_call_id = tool_call_id
         self.visible = True  # For future use
+        self.input_tokens = 0
+        self.output_tokens = 0
+        self.task_id = None
 
 
 class Provider(ABC):
@@ -18,8 +57,8 @@ class Provider(ABC):
         self.model = model
 
     @abstractmethod
-    def chat(self, messages: List[Message], **kwargs) -> str:
-        """Send a chat request and return the response"""
+    def chat(self, messages: List[Message], **kwargs) -> Dict[str, Any]:
+        """Send a chat request and return the response with content and usage"""
         pass
 
     @abstractmethod

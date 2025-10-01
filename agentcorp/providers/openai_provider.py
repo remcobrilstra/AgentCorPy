@@ -1,5 +1,5 @@
 from typing import List, Dict, Any
-from .base import Provider, Message
+from .base import Provider, Message, retry_on_connection_error
 from ..tool_registry import Tool
 import openai
 
@@ -9,7 +9,8 @@ class OpenAIProvider(Provider):
         super().__init__(api_key, model)
         self.client = openai.OpenAI(api_key=api_key)
 
-    def chat(self, messages: List[Message], **kwargs) -> str:
+    @retry_on_connection_error()
+    def chat(self, messages: List[Message], **kwargs) -> Dict[str, Any]:
         openai_messages = []
         for msg in messages:
             msg_dict = {"role": msg.role, "content": msg.content}
@@ -31,11 +32,15 @@ class OpenAIProvider(Provider):
             messages=openai_messages,
             **kwargs
         )
-        return response.choices[0].message.content
+        return {
+            "content": response.choices[0].message.content,
+            "usage": response.usage
+        }
 
     def supports_tools(self) -> bool:
         return True
 
+    @retry_on_connection_error()
     def chat_with_tools(self, messages: List[Message], tools: List[Dict[str, Any]], **kwargs) -> Dict[str, Any]:
         openai_messages = []
         for msg in messages:
@@ -61,7 +66,7 @@ class OpenAIProvider(Provider):
             **kwargs
         )
         message = response.choices[0].message
-        result = {"content": message.content, "tool_calls": []}
+        result = {"content": message.content, "tool_calls": [], "usage": response.usage}
         if message.tool_calls:
             result["tool_calls"] = [
                 {

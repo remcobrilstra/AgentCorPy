@@ -58,6 +58,73 @@ To enhance the Programmer Agent's capabilities for comprehensive software develo
 - **Built-in Tools**: Framework includes web scraping and secure filesystem tools for content retrieval and file management
 - **Agent Configuration**: Load and save agent configurations from/to JSON files
 - **Logging Framework**: Configurable logging with verbose mode for debugging tool calls and task actions
+- **Token Cost Tracking**: Automatic tracking of input/output tokens and costs per message and conversation, with provider-specific rates
+
+## Token Cost Tracking
+
+The framework now includes automatic token usage and cost tracking to help monitor and optimize LLM expenses.
+
+### Features
+
+- **Per-Message Token Estimation**: Estimates input tokens for each message using provider-specific tokenizers (e.g., tiktoken for OpenAI)
+- **Output Token Capture**: Captures actual output tokens from provider responses
+- **Cost Calculation**: Calculates costs in USD per million tokens using current provider rates
+- **Memory Management**: Prunes messages when approaching context limits based on total input tokens
+- **Provider Support**: Supports OpenAI, Anthropic, and xAI with accurate rates and context sizes
+
+### Model Configuration
+
+Models and their costs are defined in `agentcorp/models.py`. Current supported models:
+
+- **OpenAI**: GPT-3.5-turbo ($1.50 input, $2.00 output per million tokens, 16,385 context)
+- **Anthropic**: Claude-3-haiku ($0.25 input, $1.25 output per million tokens, 200,000 context)
+- **xAI**: Grok ($0.00 for both, 128,000 context)
+
+### Usage
+
+Token tracking is automatic when creating agents:
+
+```python
+from agentcorp import Agent, OpenAIProvider
+
+agent = Agent(provider=OpenAIProvider(api_key="your-key"))
+
+# Chat normally - tokens are tracked automatically
+response = agent.chat("Hello!")
+
+# Access cost information
+total_cost = agent.memory.get_total_cost()  # Total cost for conversation
+message_cost = agent.memory.get_message_cost(agent.memory.get_messages()[-1])  # Cost of last message
+```
+
+### Cost Monitoring
+
+Monitor costs programmatically:
+
+```python
+# Get total conversation cost
+cost = agent.memory.get_total_cost()
+print(f"Total cost: ${cost:.4f}")
+
+# Get cost breakdown for a specific message
+msg = agent.memory.get_messages()[-1]
+cost = agent.memory.get_message_cost(msg)
+print(f"Message cost: ${cost:.4f} (input: {msg.input_tokens}, output: {msg.output_tokens})")
+```
+
+Costs are calculated as:
+- Input cost = (input_tokens / 1,000,000) × input_rate_per_million
+- Output cost = (output_tokens / 1,000,000) × output_rate_per_million
+
+### Context Management
+
+The memory system uses token counts for intelligent pruning:
+
+- Messages are pruned when total input tokens exceed the model's context size
+- Recent messages are preserved over older ones
+- System messages are always retained
+
+This ensures conversations stay within provider limits while maximizing relevant context.
 
 ## Logging
 
@@ -308,7 +375,26 @@ result = global_tool_registry.execute_tool({
 }, context)
 ```
 
-### Filesystem Tools
+### Web Search Tool
+
+Search the web using DuckDuckGo and return formatted search results.
+
+```python
+# The web_search tool is automatically registered
+result = agent.chat("Search for information about Python programming")
+```
+
+Parameters:
+- `query` (string, required): The search query to perform
+- `num_results` (integer, optional): Number of results to return (default: 5, max: 10)
+
+Example usage:
+```python
+# Search with custom number of results
+result = global_tool_registry.execute_tool({
+    "function": {"name": "web_search", "arguments": '{"query": "machine learning tutorials", "num_results": 3}'}
+}, context)
+```
 
 Secure file operations with working directory restrictions. All filesystem operations are restricted to the `workingdir` setting if specified in the agent's context.
 
