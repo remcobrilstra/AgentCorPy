@@ -53,6 +53,12 @@ def main():
                 response = agent.handle_complex_query(user_input)
                 print(f"Agent: {response}\n")
 
+                # token usage and cost
+                total_cost = agent.memory.get_total_cost()
+                total_tokens = agent.memory.get_total_tokens_used()
+                print(f"💰 Total Cost: ${total_cost:.6f} | Total Tokens: {total_tokens}")
+                
+
             except Exception as e:
                 print(f"❌ Error: {e}\n")
 

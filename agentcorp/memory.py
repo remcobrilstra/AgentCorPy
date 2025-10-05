@@ -1,6 +1,6 @@
 from typing import List, Dict, Any
 from .providers import Message
-from .models import get_model_info
+from .models import get_model_info, ProviderResponse
 import tiktoken
 from .logging import logger
 
@@ -22,27 +22,31 @@ class Memory:
         msg = Message(role, content, tool_calls, tool_call_id)
         msg.task_id = task_id
         # Estimate input tokens
-        # try:
-        #     encoding = tiktoken.encoding_for_model(self.model)
-        #     msg.input_tokens = len(encoding.encode(content)) + (len(tool_calls) * 10 if tool_calls else 0)
-        # except Exception as e:
-        #     msg.input_tokens = int(len(content.split()) * 1.3)
-        #     logger.warning(f"Token estimation failed for model {self.model}: {e}")
+        try:
+            encoding = tiktoken.encoding_for_model(self.model)
+            msg.input_tokens_estimate = len(encoding.encode(content)) + (len(tool_calls) * 10 if tool_calls else 0)
+        except Exception as e:
+            msg.input_tokens_estimate = int(len(content.split()) * 1.3)
+            # logger.warning(f"Token estimation failed for model {self.model}: {e}")
         
         self.messages.append(msg)
-        self.total_input_tokens += msg.input_tokens
         
         # Prune if exceeding limits
-        while len(self.messages) > self.max_messages or self.total_input_tokens > self.max_tokens:
+        while len(self.messages) > self.max_messages or self.total_input_tokens + msg.input_tokens_estimate > self.max_tokens:
             removed = self.messages.pop(0)
             self.total_input_tokens -= getattr(removed, 'input_tokens', 0)
         
         return msg
     
-    def add_response_message(self, role: str, content: str, output_tokens: int, tool_calls: List[Dict[str, Any]] = None, tool_call_id: str = None, task_id: str = None) -> Message:
-        msg = self.add_message(role, content, tool_calls, tool_call_id, task_id)
-        msg.output_tokens = output_tokens
-        self.total_output_tokens += output_tokens
+    def add_response_message(self, role: str, response: ProviderResponse, tool_call_id: str = None, task_id: str = None) -> Message:
+        msg = self.add_message(role, response.message, response.function_calls, tool_call_id, task_id)
+        # Adjust input_tokens: subtract estimated, add actual
+
+        msg.input_tokens_total = response.input_tokens
+        msg.input_tokens = response.input_tokens - self.total_input_tokens
+        self.total_input_tokens = self.total_input_tokens + response.input_tokens
+        msg.output_tokens = response.output_tokens
+        self.total_output_tokens += response.output_tokens
         return msg
     
     def get_total_cost(self) -> float:

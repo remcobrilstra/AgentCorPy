@@ -6,6 +6,7 @@ from .tasks import TaskManager
 from . import tools as tools_module
 from .tool_registry import ToolRegistry, ToolExecutionContext, global_tool_registry, Tool
 from .logging import logger
+from .models import ProviderResponse
 
 
 class Agent:
@@ -44,13 +45,13 @@ class Agent:
             while True:
                 tools_format = self.provider.get_tools_format(self.tools)
                 response = self.provider.chat_with_tools(self.memory.get_messages(), tools_format, **kwargs)
-                content = response.get("content", "")
-                tool_calls = response.get("tool_calls", [])
-                usage = response.get("usage")
-                output_tokens = getattr(usage, 'completion_tokens', getattr(usage, 'output_tokens', 0)) if usage else 0
+                content = response.message
+                tool_calls = response.function_calls
+                input_tokens = response.input_tokens
+                output_tokens = response.output_tokens
 
                 if add_to_memory:
-                    self.memory.add_response_message("assistant", content, output_tokens, tool_calls=tool_calls)
+                    self.memory.add_response_message("assistant", response)
 
                 if not tool_calls:
                     return content
@@ -72,11 +73,11 @@ class Agent:
 
         else:
             response = self.provider.chat(self.memory.get_messages(), **kwargs)
-            content = response.get("content", "")
-            usage = response.get("usage")
-            output_tokens = getattr(usage, 'completion_tokens', getattr(usage, 'output_tokens', 0)) if usage else 0
+            content = response.message
+            input_tokens = response.input_tokens
+            output_tokens = response.output_tokens
             if add_to_memory:
-                self.memory.add_response_message("assistant", content, output_tokens)
+                self.memory.add_response_message("assistant", response)
             return content
 
     def add_task(self, description: str) -> str:
@@ -121,7 +122,7 @@ class Agent:
         msg = self.memory.add_message("user", prompt)
 
         response_raw = self.provider.chat(self.memory.get_messages())
-        response = response_raw.get("content", "")
+        response = response_raw.message
         #self.memory.add_message("assistant", response)
         self.memory.remove_message(msg)
 
@@ -170,8 +171,8 @@ class Agent:
 
         msg1 = self.memory.add_message("user", complexity_prompt)
         complexity_response = self.provider.chat(self.memory.get_messages())
-        content = complexity_response.get("content", "")
-        msg2 = self.memory.add_message("assistant", complexity_response)
+        content = complexity_response.message
+        msg2 = self.memory.add_response_message("assistant", complexity_response)
 
         self.memory.remove_message(msg1)
         self.memory.remove_message(msg2)

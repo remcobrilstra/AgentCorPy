@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any
 from ..tool_registry import Tool
+from ..models import ProviderResponse
 import time
 import logging
 
@@ -46,6 +47,8 @@ class Message:
         self.tool_calls = tool_calls or []
         self.tool_call_id = tool_call_id
         self.visible = True  # For future use
+        self.input_tokens_estimate = 0  # Estimated input tokens for this message
+        self.input_tokens_total = 0  # Actual input tokens used
         self.input_tokens = 0
         self.output_tokens = 0
         self.task_id = None
@@ -57,7 +60,7 @@ class Provider(ABC):
         self.model = model
 
     @abstractmethod
-    def chat(self, messages: List[Message], **kwargs) -> Dict[str, Any]:
+    def chat(self, messages: List[Message], **kwargs) -> ProviderResponse:
         """Send a chat request and return the response with content and usage"""
         pass
 
@@ -67,7 +70,7 @@ class Provider(ABC):
         pass
 
     @abstractmethod
-    def chat_with_tools(self, messages: List[Message], tools: List[Dict[str, Any]], **kwargs) -> Dict[str, Any]:
+    def chat_with_tools(self, messages: List[Message], tools: List[Dict[str, Any]], **kwargs) -> ProviderResponse:
         """Send a chat request with tools and return response with tool calls"""
         pass
 

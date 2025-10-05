@@ -1,6 +1,7 @@
 from typing import List, Dict, Any
 from .base import Provider, Message, retry_on_connection_error
 from ..tool_registry import Tool
+from ..models import ProviderResponse
 import openai
 
 
@@ -10,7 +11,7 @@ class OpenAIProvider(Provider):
         self.client = openai.OpenAI(api_key=api_key)
 
     @retry_on_connection_error()
-    def chat(self, messages: List[Message], **kwargs) -> Dict[str, Any]:
+    def chat(self, messages: List[Message], **kwargs) -> ProviderResponse:
         openai_messages = []
         for msg in messages:
             msg_dict = {"role": msg.role, "content": msg.content}
@@ -32,16 +33,21 @@ class OpenAIProvider(Provider):
             messages=openai_messages,
             **kwargs
         )
-        return {
-            "content": response.choices[0].message.content,
-            "usage": response.usage
-        }
+        content = response.choices[0].message.content or ""
+        input_tokens = getattr(response.usage, 'prompt_tokens', 0)
+        output_tokens = getattr(response.usage, 'completion_tokens', 0)
+        return ProviderResponse(
+            message=content,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            function_calls=[]
+        )
 
     def supports_tools(self) -> bool:
         return True
 
     @retry_on_connection_error()
-    def chat_with_tools(self, messages: List[Message], tools: List[Dict[str, Any]], **kwargs) -> Dict[str, Any]:
+    def chat_with_tools(self, messages: List[Message], tools: List[Dict[str, Any]], **kwargs) -> ProviderResponse:
         openai_messages = []
         for msg in messages:
             msg_dict = {"role": msg.role, "content": msg.content}
@@ -66,9 +72,12 @@ class OpenAIProvider(Provider):
             **kwargs
         )
         message = response.choices[0].message
-        result = {"content": message.content, "tool_calls": [], "usage": response.usage}
+        content = message.content or ""
+        input_tokens = getattr(response.usage, 'prompt_tokens', 0)
+        output_tokens = getattr(response.usage, 'completion_tokens', 0)
+        function_calls = []
         if message.tool_calls:
-            result["tool_calls"] = [
+            function_calls = [
                 {
                     "id": tool_call.id,
                     "function": {
@@ -78,7 +87,12 @@ class OpenAIProvider(Provider):
                 }
                 for tool_call in message.tool_calls
             ]
-        return result
+        return ProviderResponse(
+            message=content,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            function_calls=function_calls
+        )
 
     def get_tools_format(self, tools: Dict[str, Tool]) -> List[Dict[str, Any]]:
         return [tool.to_openai_format() for tool in tools.values()]

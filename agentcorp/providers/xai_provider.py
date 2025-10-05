@@ -2,6 +2,7 @@ from typing import List, Dict, Any
 import requests
 from .base import Provider, Message, retry_on_connection_error
 from ..tool_registry import Tool
+from ..models import ProviderResponse
 
 
 class XAIProvider(Provider):
@@ -10,7 +11,7 @@ class XAIProvider(Provider):
         self.base_url = "https://api.x.ai/v1"
 
     @retry_on_connection_error()
-    def chat(self, messages: List[Message], **kwargs) -> str:
+    def chat(self, messages: List[Message], **kwargs) -> ProviderResponse:
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
@@ -41,16 +42,22 @@ class XAIProvider(Provider):
             raise Exception(f"xAI API error: {response.status_code} - {response.text}")
 
         result = response.json()
-        return {
-            "content": result["choices"][0]["message"]["content"],
-            "usage": result.get("usage")
-        }
+        content = result["choices"][0]["message"]["content"]
+        usage = result.get("usage", {})
+        input_tokens = usage.get("prompt_tokens", 0)
+        output_tokens = usage.get("completion_tokens", 0)
+        return ProviderResponse(
+            message=content,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            function_calls=[]
+        )
 
     def supports_tools(self) -> bool:
         return True  # Assuming xAI supports tools
 
     @retry_on_connection_error()
-    def chat_with_tools(self, messages: List[Message], tools: List[Dict[str, Any]], **kwargs) -> Dict[str, Any]:
+    def chat_with_tools(self, messages: List[Message], tools: List[Dict[str, Any]], **kwargs) -> ProviderResponse:
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
@@ -86,9 +93,13 @@ class XAIProvider(Provider):
 
         result = response.json()
         message = result["choices"][0]["message"]
-        response_dict = {"content": message.get("content", ""), "tool_calls": [], "usage": result.get("usage")}
+        content = message.get("content", "")
+        usage = result.get("usage", {})
+        input_tokens = usage.get("prompt_tokens", 0)
+        output_tokens = usage.get("completion_tokens", 0)
+        function_calls = []
         if "tool_calls" in message:
-            response_dict["tool_calls"] = [
+            function_calls = [
                 {
                     "id": tc["id"],
                     "function": {
@@ -98,7 +109,12 @@ class XAIProvider(Provider):
                 }
                 for tc in message["tool_calls"]
             ]
-        return response_dict
+        return ProviderResponse(
+            message=content,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            function_calls=function_calls
+        )
 
     def get_tools_format(self, tools: Dict[str, Tool]) -> List[Dict[str, Any]]:
         return [tool.to_openai_format() for tool in tools.values()]

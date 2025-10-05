@@ -1,6 +1,7 @@
 from typing import List, Dict, Any
 from .base import Provider, Message, retry_on_connection_error
 from ..tool_registry import Tool
+from ..models import ProviderResponse
 import anthropic
 import json
 
@@ -11,7 +12,7 @@ class AnthropicProvider(Provider):
         self.client = anthropic.Anthropic(api_key=api_key)
 
     @retry_on_connection_error()
-    def chat(self, messages: List[Message], **kwargs) -> Dict[str, Any]:
+    def chat(self, messages: List[Message], **kwargs) -> ProviderResponse:
         # Convert to Anthropic format
         system_message = None
         anthropic_messages = []
@@ -44,16 +45,21 @@ class AnthropicProvider(Provider):
             messages=anthropic_messages,
             **kwargs
         )
-        return {
-            "content": response.content[0].text,
-            "usage": response.usage
-        }
+        content = response.content[0].text if response.content else ""
+        input_tokens = getattr(response.usage, 'input_tokens', 0)
+        output_tokens = getattr(response.usage, 'output_tokens', 0)
+        return ProviderResponse(
+            message=content,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            function_calls=[]
+        )
 
     def supports_tools(self) -> bool:
         return True
 
     @retry_on_connection_error()
-    def chat_with_tools(self, messages: List[Message], tools: List[Dict[str, Any]], **kwargs) -> Dict[str, Any]:
+    def chat_with_tools(self, messages: List[Message], tools: List[Dict[str, Any]], **kwargs) -> ProviderResponse:
         # Convert tools to Anthropic format
         anthropic_tools = []
         for tool in tools:
@@ -105,19 +111,27 @@ class AnthropicProvider(Provider):
             **kwargs
         )
 
-        result = {"content": "", "tool_calls": [], "usage": response.usage}
+        content = ""
+        function_calls = []
         for content_block in response.content:
             if content_block.type == "text":
-                result["content"] += content_block.text
+                content += content_block.text
             elif content_block.type == "tool_use":
-                result["tool_calls"].append({
+                function_calls.append({
                     "id": content_block.id,
                     "function": {
                         "name": content_block.name,
                         "arguments": json.dumps(content_block.input)
                     }
                 })
-        return result
+        input_tokens = getattr(response.usage, 'input_tokens', 0)
+        output_tokens = getattr(response.usage, 'output_tokens', 0)
+        return ProviderResponse(
+            message=content,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            function_calls=function_calls
+        )
 
     def get_tools_format(self, tools: Dict[str, Tool]) -> List[Dict[str, Any]]:
         return [tool.to_anthropic_format() for tool in tools.values()]

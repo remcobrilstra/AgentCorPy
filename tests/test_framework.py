@@ -11,7 +11,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from agentcorp import Agent, Task, TaskManager, TaskStatus, Tool, global_tool_registry, ToolExecutionContext
 from agentcorp.memory import Memory
-from agentcorp.models import get_model_info
+from agentcorp.models import ProviderResponse, get_model_info
 
 
 def test_task_hierarchy():
@@ -51,6 +51,8 @@ def test_task_execution():
 
         # Mock agent with chat method
         class MockAgent:
+            def __init__(self):
+                self.memory = Memory(provider="openai", model="gpt-3.5-turbo")
             def chat(self, prompt, add_to_memory=True):
                 return f"Executed via LLM: {prompt.split('Current task to complete:')[-1].strip()}"
 
@@ -80,6 +82,8 @@ def test_sequential_execution():
         # Mock agent with chat method
         execution_count = 0
         class MockAgent:
+            def __init__(self):
+                self.memory = Memory(provider="openai", model="gpt-3.5-turbo")
             def chat(self, prompt, add_to_memory=True):
                 nonlocal execution_count
                 execution_count += 1
@@ -172,12 +176,15 @@ def test_memory_token_tracking():
         
         # Add a message
         msg = memory.add_message("user", "Hello world")
-        assert msg.input_tokens > 0
-        assert memory.total_input_tokens == msg.input_tokens
+        assert msg.input_tokens_estimate > 0
+        #assert memory.total_input_tokens == msg.input_tokens
         
         # Add response
-        response_msg = memory.add_response_message("assistant", "Hi there", 10)
+        response_obj = ProviderResponse(message="Hi there", input_tokens=5, output_tokens=10, function_calls=[])
+        response_msg = memory.add_response_message("assistant", response_obj)
+        assert response_msg.input_tokens == 5
         assert response_msg.output_tokens == 10
+        assert memory.total_input_tokens == msg.input_tokens + 5
         assert memory.total_output_tokens == 10
         
         # Check costs

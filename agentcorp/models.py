@@ -4,6 +4,19 @@ Contains model information for different providers including costs and context s
 Costs are in USD per million tokens.
 """
 
+from typing import List, Dict, Any
+from dataclasses import dataclass
+
+
+@dataclass
+class ProviderResponse:
+    """Response object from providers containing message and token usage"""
+    message: str
+    input_tokens: int
+    output_tokens: int
+    function_calls: List[Dict[str, Any]]  # tool_calls
+
+
 models = {
     "openai": {
         "gpt-3.5-turbo": {
